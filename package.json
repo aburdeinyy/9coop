@@ -1,6 +1,6 @@
 {
   "name": "layercoop",
-  "version": "0.0.0-development",
+  "version": "1.0.0",
   "description": "Visual GOD-graph orchestrator: skills, MCP, agents and runners on a canvas",
   "license": "MIT",
   "author": "Anatoliy Burdeinyy",
