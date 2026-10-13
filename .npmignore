@@ -1,0 +1,21 @@
+# Source / tooling not needed at runtime for npx (UI is prebuilt in dist/)
+.angular/
+.cursor/
+.github/
+.vscode/
+.idea/
+graphify-out/
+.tmp/
+tmp/
+tests/
+*.log
+.DS_Store
+.env
+.env.*
+.layercoop/
+coverage/
+dist/umcpb/
+
+# Keep dist/layercoop (built UI) — negated below
+!dist/layercoop/
+!dist/layercoop/**

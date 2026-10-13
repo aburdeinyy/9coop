@@ -1,26 +1,58 @@
 {
   "name": "layercoop",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0-development",
+  "description": "Visual GOD-graph orchestrator: skills, MCP, agents and runners on a canvas",
+  "license": "MIT",
+  "author": "Anatoliy Burdeinyy",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aburdeinyy/9coop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aburdeinyy/9coop/issues"
+  },
+  "homepage": "https://github.com/aburdeinyy/9coop#readme",
+  "keywords": [
+    "layercoop",
+    "mcp",
+    "agent",
+    "orchestrator",
+    "canvas"
+  ],
+  "bin": {
+    "layercoop": "bin/layercoop.mjs"
+  },
+  "files": [
+    "bin",
+    "bridge",
+    "cli",
+    "src/app/core",
+    "dist/layercoop/browser",
+    "LICENSE",
+    "README.md"
+  ],
   "packageManager": "npm@11.17.0",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "bridge": "tsx bridge/src/server.ts",
     "dev": "concurrently -k -n ui,bridge -c cyan,magenta \"ng serve\" \"npm run bridge\"",
     "build": "ng build",
+    "prepack": "npm run build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "semantic-release": "semantic-release",
+    "layercoop": "node bin/layercoop.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
-    "@angular/common": "^22.1.0",
-    "@angular/compiler": "^22.1.0",
-    "@angular/core": "^22.1.0",
-    "@angular/forms": "^22.1.0",
-    "@angular/platform-browser": "^22.1.0",
     "@cursor/sdk": "^1.0.30",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "concurrently": "^10.0.5",
     "jszip": "^3.10.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
@@ -29,8 +61,17 @@
   "devDependencies": {
     "@angular/build": "^22.1.7",
     "@angular/cli": "^22.1.7",
+    "@angular/common": "^22.1.0",
+    "@angular/compiler": "^22.1.0",
     "@angular/compiler-cli": "^22.1.0",
+    "@angular/core": "^22.1.0",
+    "@angular/forms": "^22.1.0",
+    "@angular/platform-browser": "^22.1.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@types/node": "^26.4.1",
+    "concurrently": "^10.0.5",
+    "semantic-release": "^24.2.9",
     "typescript": "~6.0.2",
     "vitest": "^4.0.8"
   }

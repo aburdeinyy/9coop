@@ -15,10 +15,16 @@
 ## Быстрый старт
 
 ```bash
-nvm use 24   # Angular 22 требует Node ^22.22.3 || ^24.15.0 || >=26
+# из npm (после релиза)
+npx layercoop
+
+# из исходников
+nvm use 24   # Angular 22: Node ^22.22.3 || ^24.15.0 || >=26
 npm install
 npm run dev  # UI :4200 + bridge :7843
 ```
+
+CLI: `layercoop [--port 4200] [--host 127.0.0.1] [--no-open]` — UI + bridge на одном порту (прокси `/layercoop-bridge`).
 
 Секреты — через UI **Secrets** → корневой `.env`. Что нужно на машине под каждый runner:
 
@@ -48,6 +54,15 @@ OAuth к claude.ai сторонним приложениям [запрещён](
 | `npm run build` | Production build |
 | `npm test` | Vitest |
 | `npm run test:watch` | Vitest watch |
+| `npm run semantic-release` | Релиз (обычно из GitHub Actions) |
+
+## Релиз
+
+Публикация идёт через [semantic-release](https://semantic-release.org/) на push в `develop` / `main` (workflow `.github/workflows/release.yml`).
+
+1. В GitHub → Settings → Secrets → Actions добавь `NPM_TOKEN` (npm Automation token).
+2. Коммиты в формате Conventional Commits: `feat(…)`, `fix(…)`, `chore(…)` — от них считается версия.
+3. Первый релиз появится после коммита с `feat:` (или `fix:`) поверх текущего дерева.
 
 ## Что умеет сейчас
 
