@@ -60,9 +60,22 @@ OAuth к claude.ai сторонним приложениям [запрещён](
 
 Публикация идёт через [semantic-release](https://semantic-release.org/) только на push в `release` (workflow `.github/workflows/release.yml`).
 
-1. В GitHub → Settings → Secrets → Actions добавь `NPM_TOKEN` (npm Automation token).
-2. Коммиты в формате Conventional Commits: `feat(…)`, `fix(…)`, `chore(…)` — от них считается версия.
-3. Первый релиз появится после коммита с `feat:` (или `fix:`) поверх текущего дерева.
+Релиз только с ветки `release`. Публикация — **Trusted Publishing (OIDC)**, без `NPM_TOKEN`.
+
+1. **Один раз** создай пакет на npm (OIDC не умеет первую публикацию):
+   ```bash
+   npm login
+   git checkout release && git pull
+   npm publish --access public --otp=КОД_ИЗ_2FA
+   ```
+2. На npm → пакет `layercoop` → **Settings** → **Trusted Publisher** → GitHub Actions:
+   - Organization or user: `aburdeinyy`
+   - Repository: `9coop`
+   - Workflow filename: `release.yml` (только имя файла)
+   - Environment: пусто
+3. В GitHub **удали** secret `NPM_TOKEN`, если он есть (мешает OIDC).
+4. Запушь workflow на `release` — дальше версии публикует CI.
+5. Коммиты: `feat(…)`, `fix(…)` — от них считается версия.
 
 ## Что умеет сейчас
 
