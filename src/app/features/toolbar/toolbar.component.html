@@ -1,0 +1,99 @@
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="toolbar-brand" title="Layercoop">
+      <img
+        class="toolbar-wordmark"
+        src="brand/layercoop-wordmark.svg"
+        height="28"
+        alt="Layercoop"
+      />
+    </div>
+    <div class="toolbar-divider"></div>
+    <input
+      class="graph-name-input"
+      [value]="graphService.graph().name"
+      (input)="onNameInput($event)"
+      aria-label="Graph name"
+    />
+  </div>
+  <div class="toolbar-actions">
+    <button
+      type="button"
+      class="btn"
+      (click)="addNode($event)"
+      title="Тип ноды определится по промпту"
+    >
+      <span>+</span>
+      <span>Добавить узел</span>
+    </button>
+    <button
+      type="button"
+      class="btn"
+      (click)="addChecklist($event)"
+      title="Нода с чеклистом на плитке"
+    >
+      <span>☐</span>
+      <span>Чеклист</span>
+    </button>
+    <button
+      type="button"
+      class="btn"
+      (click)="addRepo($event)"
+      [disabled]="pickingRepo()"
+      title="Выбрать папку репозитория и добавить ноду"
+    >
+      <span>📁</span>
+      <span>{{ pickingRepo() ? 'Выбор папки…' : 'Репозиторий' }}</span>
+    </button>
+    <div class="toolbar-separator"></div>
+    @if (!graphService.chatSidebarOpen()) {
+      <button
+        type="button"
+        class="btn"
+        (click)="openChat($event)"
+        title="Открыть чат"
+      >
+        <span>💬</span>
+        <span>Чат</span>
+      </button>
+    }
+    <button type="button" class="btn" (click)="openSettings($event)" title="Настройки">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4" />
+        <path
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+          stroke-linecap="round"
+          d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"
+        />
+      </svg>
+      <span>Настройки</span>
+    </button>
+    <button type="button" class="btn" (click)="openSecrets($event)" title="Секреты → .env">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+          stroke-linejoin="round"
+          d="M10.2 1.8a3.2 3.2 0 0 0-4.4 3.1L2.2 8.5v2.2h2.2l.8-.8V8.6l1.2-1.2a3.2 3.2 0 0 0 4.6-2.8 3.2 3.2 0 0 0-.8-2.8z"
+        />
+        <circle cx="10.4" cy="4.6" r="0.7" fill="currentColor" stroke="none" />
+      </svg>
+      <span>Секреты</span>
+    </button>
+    <button type="button" class="btn btn-primary" (click)="export()">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          d="M8 2.5v7M5.2 7.2 8 10l2.8-2.8M3.5 13.5h9"
+        />
+      </svg>
+      <span>Экспорт</span>
+    </button>
+  </div>
+</div>

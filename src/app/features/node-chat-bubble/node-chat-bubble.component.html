@@ -1,0 +1,563 @@
+@if (selected(); as s) {
+  <div
+    class="node-chat-bubble"
+    (pointerdown)="$event.stopPropagation()"
+    (click)="$event.stopPropagation()"
+    (wheel)="$event.stopPropagation()"
+  >
+    <div class="node-chat-bubble-caret" aria-hidden="true"></div>
+
+    <div class="prompt-bubble-header">
+      <span class="prompt-bubble-header__title">{{ title() }}</span>
+      <div class="god-config-bubble-actions">
+        @if (s.type === 'artifact') {
+          @if (!isDirectlyLinkedToGod(s.id)) {
+            <button type="button" class="btn btn-small btn-success" (click)="connect()" title="Связать с GOD">
+              ⚡ К GOD
+            </button>
+          } @else {
+            <button type="button" class="btn btn-small btn-ghost" (click)="disconnect()" title="Отсоединить от GOD">
+              От GOD
+            </button>
+          }
+          <button type="button" class="btn btn-ghost btn-small" (click)="remove()" title="Удалить ноду">
+            🗑
+          </button>
+        } @else if (s.god) {
+          @if (!isPrimaryGodNode(s.id)) {
+            @if (!isDirectlyLinkedToGod(s.id)) {
+              <button type="button" class="btn btn-small btn-success" (click)="connect()" title="Связать с primary GOD">
+                ⚡ К GOD
+              </button>
+            } @else {
+              <button type="button" class="btn btn-small btn-ghost" (click)="disconnect()" title="Отсоединить от primary">
+                От GOD
+              </button>
+            }
+            <button type="button" class="btn btn-ghost btn-small" (click)="remove()" title="Удалить саб-GOD">
+              🗑
+            </button>
+          }
+          <span class="connected-label">{{
+            isPrimaryGodNode(s.id) ? runnerLabels[s.god.runner] : 'sub · ' + runnerLabels[s.god.runner]
+          }}</span>
+        }
+        <button type="button" class="btn btn-ghost btn-small" (click)="close()" title="Закрыть">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    @if (neighbors().length) {
+      <div class="node-links-panel">
+        <div class="mcp-tools-panel__title">Связи</div>
+        <ul class="node-links-list">
+          @for (n of neighbors(); track n.id) {
+            <li>
+              <span class="node-links-list__label">{{ n.type === 'god' ? '⚡' : '' }}{{ n.label }}</span>
+              <button
+                type="button"
+                class="btn btn-ghost btn-small"
+                title="Разорвать связь"
+                (click)="unlinkNeighbor(n.id)"
+              >
+                ✕
+              </button>
+            </li>
+          }
+        </ul>
+        @if (s.type === 'artifact' && isConnected(s.id) && !isDirectlyLinkedToGod(s.id)) {
+          <div class="node-links-hint">В цепочке GOD · клик по линии на canvas тоже отвязывает</div>
+        }
+      </div>
+    } @else {
+      <div class="node-links-hint">
+        Связь: потяните точку на рамке ноды к другой ноде. Отвязка: клик по линии.
+      </div>
+    }
+
+    <div class="node-chat-settings">
+      @if (s.type === 'god' && s.god; as g) {
+        <label class="field">
+          <span>Имя</span>
+          <input [value]="g.label" (input)="onGodLabel($event)" placeholder="Cursor" />
+        </label>
+        <label class="field">
+          <span>Runner</span>
+          <select [value]="g.runner" (change)="onRunner($event)">
+            @for (p of runners; track p) {
+              <option [value]="p" [selected]="g.runner === p">{{ runnerLabels[p] }}</option>
+            }
+          </select>
+        </label>
+        @if (needsEndpoint(g.runner)) {
+          <label class="field">
+            <span>Base URL</span>
+            <input [value]="g.baseUrl" (input)="onBaseUrl($event)" placeholder="https://openwebui.example/api/v1" />
+            <span class="field-hint">Для OpenWebUI обычно …/api/v1</span>
+          </label>
+          <label class="field">
+            <span>API key</span>
+            <input type="password" autocomplete="off" [value]="g.apiKey" (input)="onApiKey($event)" />
+          </label>
+          <label class="field">
+            <span>apiKeyEnv (Secrets)</span>
+            <input
+              [value]="g.apiKeyEnv ?? ''"
+              (input)="onApiKeyEnv($event)"
+              placeholder="OPEN_WEBUI_TOKEN"
+            />
+            <span class="field-hint">Имя переменной из Secrets — ключ подставит bridge</span>
+          </label>
+          <label class="field">
+            <span>Модель</span>
+            @if (modelsLoading()) {
+              <div class="models-preloader" aria-live="polite">
+                <span class="btn-spinner" aria-hidden="true"></span>
+                <span>Загрузка моделей…</span>
+              </div>
+            } @else if (availableModels().length > 0) {
+              <select [value]="g.model" (change)="onModel($event)">
+                @for (m of modelOptions(); track m) {
+                  <option [value]="m" [selected]="g.model === m">{{ m }}</option>
+                }
+              </select>
+              <span class="field-hint">{{ availableModels().length }} моделей</span>
+            } @else if (modelsError()) {
+              <span class="field-hint field-hint-error">{{ modelsError() }}</span>
+            } @else {
+              <span class="field-hint">Укажите Base URL и API key / apiKeyEnv — через 0.5 с подтянем модели</span>
+            }
+          </label>
+          <label class="field">
+            <span>Temperature</span>
+            <input type="number" min="0" max="2" step="0.1" [value]="g.temperature" (input)="onTemperature($event)" />
+          </label>
+        } @else if (isCursor(g.runner)) {
+          @if (cursorFast()) {
+            <label class="field field-check">
+              <input type="checkbox" [checked]="cursorFastOn()" (change)="onCursorFast($event)" />
+              <span>Fast</span>
+            </label>
+          }
+          @if (cursorEffort(); as effort) {
+            <label class="field">
+              <span>{{ effort.label }}</span>
+              <select [value]="cursorEffortValue()" (change)="onCursorEffort($event)">
+                @for (v of effort.values; track v.value) {
+                  <option [value]="v.value" [selected]="cursorEffortValue() === v.value">{{ v.label }}</option>
+                }
+              </select>
+            </label>
+          }
+          <label class="field">
+            <span>Модель</span>
+            @if (modelsLoading()) {
+              <div class="models-preloader" aria-live="polite">
+                <span class="btn-spinner" aria-hidden="true"></span>
+                <span>Загрузка моделей…</span>
+              </div>
+            } @else {
+              <select [value]="cursorModelBase(g.model)" (change)="onCursorModel($event)">
+                @for (m of cursorModels(); track m.id) {
+                  <option [value]="m.id" [selected]="cursorModelBase(g.model) === m.id">{{ m.label }}</option>
+                }
+              </select>
+              @if (modelsError()) {
+                <span class="field-hint field-hint-error">{{ modelsError() }}</span>
+              } @else if (cursorCatalog().length > 0) {
+                <span class="field-hint">{{ cursorCatalog().length }} моделей</span>
+              } @else {
+                <span class="field-hint">Укажите Cursor API key — подтянем актуальные модели</span>
+              }
+            }
+          </label>
+        } @else {
+          <label class="field">
+            <span>Модель</span>
+            <input
+              [value]="g.model"
+              (input)="onModel($event)"
+              [placeholder]="modelPlaceholder(g.runner)"
+            />
+            @if (isOpencode(g.runner)) {
+              <span class="field-hint">Формат opencode: <code>provider/model</code></span>
+            }
+          </label>
+        }
+        @if (needsCursorKey(g.runner)) {
+          <label class="field">
+            <span>Cursor API key</span>
+            <input type="password" autocomplete="off" [value]="g.apiKey" (input)="onApiKey($event)" placeholder="cursor_…" />
+          </label>
+        }
+
+        @if (isClaudeCode(g.runner)) {
+          <label class="field field-check">
+            <input
+              type="checkbox"
+              [checked]="g.isolated"
+              (change)="onIsolated($event)"
+            />
+            <span>Изолированный ран (<code>--bare</code>)</span>
+          </label>
+          @if (g.isolated) {
+            <p class="field-hint">
+              В контексте только граф: CLAUDE.md, хуки, <code>.mcp.json</code> и плагины проекта
+              не читаются. Подписочный вход при этом не используется — нужен API key.
+            </p>
+            <label class="field">
+              <span>Anthropic API key</span>
+              <input
+                type="password"
+                autocomplete="off"
+                [value]="g.apiKey"
+                (input)="onApiKey($event)"
+                placeholder="sk-ant-…"
+              />
+            </label>
+          } @else {
+            <p class="field-hint">
+              Работает подписка Claude Pro/Max — через локальный вход в сам Claude Code
+              (<code>claude</code> в терминале). Layercoop ключ не хранит. В контекст
+              дополнительно попадёт ambient-окружение проекта.
+            </p>
+          }
+        }
+
+        @if (isOpencode(g.runner)) {
+          <label class="field">
+            <span>Сервер opencode</span>
+            <input
+              [value]="g.baseUrl"
+              (input)="onBaseUrl($event)"
+              [placeholder]="opencodePlaceholder"
+            />
+            <span class="field-hint">Подними его командой <code>opencode serve</code></span>
+          </label>
+          <label class="field">
+            <span>Пароль сервера (опц.)</span>
+            <input
+              type="password"
+              autocomplete="off"
+              [value]="g.apiKey"
+              (input)="onApiKey($event)"
+              placeholder="OPENCODE_SERVER_PASSWORD"
+            />
+          </label>
+        }
+
+        @if (godRunMcp(); as run) {
+          <div class="mcp-tools-panel">
+            <div class="mcp-tools-panel__title">В следующем ране</div>
+            <p class="mcp-tools-panel__hint">
+              Ноды по рёбрам от GOD попадают в контекст. Отдельного рестарта нет — каждое сообщение = новый local run.
+            </p>
+            @if (run.nodes.length === 0) {
+              <p class="mcp-tools-panel__empty">Нет связанных нод. Потяните ребро от GOD к skill/MCP.</p>
+            } @else {
+              <ul class="mcp-tools-panel__servers">
+                @for (n of run.nodes; track n.id) {
+                  <li>
+                    <strong>{{ kindIcons[n.kind] }} {{ n.label }}</strong>
+                    <span class="mcp-tools-panel__meta">{{ kindLabels[n.kind] }}</span>
+                  </li>
+                }
+              </ul>
+            }
+            @if (run.servers.length) {
+              <div class="mcp-tools-panel__subtitle">MCP servers</div>
+              <ul class="mcp-tools-panel__servers">
+                @for (srv of run.servers; track srv.name) {
+                  <li>
+                    <strong>{{ srv.name }}</strong>
+                    <span class="mcp-tools-panel__meta">{{ srv.transport }} · {{ srv.detail }}</span>
+                  </li>
+                }
+              </ul>
+            }
+            @if (run.tools.length) {
+              <div class="mcp-tools-panel__subtitle">Declared tools</div>
+              <ul class="mcp-tools-list">
+                @for (t of run.tools; track t) {
+                  <li><code>{{ t }}</code></li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      } @else if (s.type === 'artifact' && s.artifact; as a) {
+        <label class="field">
+          <span>Название</span>
+          <input
+            [value]="a.label"
+            (input)="onArtifactLabel($event)"
+            [placeholder]="a.kind === 'pawn' ? 'Corp LLM' : a.kind === 'repo' ? 'Имя репозитория' : 'Название из чата'"
+          />
+        </label>
+
+        @if (a.kind === 'repo') {
+          <p class="field-hint">
+            Тип: <strong>{{ kindLabels[a.kind] }}</strong>
+            @if (isCwdRepo()) {
+              · <strong>cwd</strong> для GOD / саб
+            }
+          </p>
+          <label class="field">
+            <span>Путь к репозиторию</span>
+            <input
+              [value]="a.repoPath || ''"
+              (input)="onRepoPath($event)"
+              placeholder="/Users/…/my-project"
+            />
+          </label>
+          <button
+            type="button"
+            class="btn"
+            style="width: 100%; margin-top: 8px"
+            (click)="refreshRepo()"
+            [disabled]="repoGit.loadingNodeId() === s.id"
+          >
+            @if (repoGit.loadingNodeId() === s.id) {
+              Обновление…
+            } @else {
+              Обновить git-статус
+            }
+          </button>
+          <p class="field-hint">Список файлов и diff — на плитке ноды. Свяжи с primary GOD для правок агентом.</p>
+        } @else {
+        <p class="field-hint">
+          Тип: <strong>{{ kindLabels[a.kind] }}</strong>
+          — уточняется в чате вместе со спекой.
+        </p>
+        @if (a.kind === 'skill') {
+          <label class="field field-check">
+            <input
+              type="checkbox"
+              [checked]="a.pipe === true"
+              (change)="onPipeToggle($event)"
+            />
+            <span>Пайп — сценарий из ПКМ по ноде</span>
+          </label>
+          <p class="field-hint">
+            Пайпы вызываются правым кликом по любой ноде → «Пайпы». Связь с GOD не обязательна.
+          </p>
+        }
+        @if (a.prompt.trim()) {
+          <div class="field">
+            <span>Спека</span>
+            <div
+              class="node-spec-preview chat-content"
+              [innerHTML]="promptHtml(a.prompt)"
+            ></div>
+          </div>
+        } @else {
+          <p class="field-hint">Опишите задачу в чате справа. GOD задаст 3–5 вопросов и сам заполнит название и спеку.</p>
+        }
+
+        @if (isDraftArtifact()) {
+          <button
+            type="button"
+            class="btn btn-primary"
+            style="width: 100%; margin-top: 8px"
+            (click)="convertToSubGod()"
+            title="Саб-GOD: Base URL, API key, модель"
+          >
+            Сделать саб-GOD (LLM)
+          </button>
+          <p class="field-hint">Для OpenWebUI / DeepSeek / corp endpoint — появятся Base URL, API key и модель.</p>
+        }
+
+        @if (a.kind === 'pawn' && a.llm; as llm) {
+          <label class="field">
+            <span>Runner</span>
+            <select [value]="llm.runner" (change)="onPawnRunner($event)">
+              @for (p of pawnRunners; track p) {
+                <option [value]="p" [selected]="llm.runner === p">{{ runnerLabels[p] }}</option>
+              }
+            </select>
+          </label>
+          @if (needsEndpoint(llm.runner)) {
+            <label class="field">
+              <span>Base URL</span>
+              <input
+                [value]="llm.baseUrl"
+                (input)="onPawnBaseUrl($event)"
+                placeholder="https://llm.corp.example/v1"
+              />
+            </label>
+            <label class="field">
+              <span>API key</span>
+              <input
+                type="password"
+                autocomplete="off"
+                [value]="llm.apiKey"
+                (input)="onPawnApiKey($event)"
+              />
+            </label>
+            <label class="field">
+              <span>Модель</span>
+              @if (modelsLoading()) {
+                <div class="models-preloader" aria-live="polite">
+                  <span class="btn-spinner" aria-hidden="true"></span>
+                  <span>Загрузка моделей…</span>
+                </div>
+              } @else if (availableModels().length > 0) {
+                <select [value]="llm.model" (change)="onPawnModel($event)">
+                  @for (m of modelOptions(); track m) {
+                    <option [value]="m" [selected]="llm.model === m">{{ m }}</option>
+                  }
+                </select>
+                <span class="field-hint">{{ availableModels().length }} моделей</span>
+              } @else if (modelsError()) {
+                <span class="field-hint field-hint-error">{{ modelsError() }}</span>
+              } @else {
+                <span class="field-hint">Укажите Base URL и API key — через 0.5 с подтянем модели</span>
+              }
+            </label>
+            <label class="field">
+              <span>Temperature</span>
+              <input
+                type="number"
+                min="0"
+                max="2"
+                step="0.1"
+                [value]="llm.temperature"
+                (input)="onPawnTemperature($event)"
+              />
+            </label>
+          } @else if (isCursor(llm.runner)) {
+            @if (cursorFast()) {
+              <label class="field field-check">
+                <input type="checkbox" [checked]="cursorFastOn()" (change)="onPawnCursorFast($event)" />
+                <span>Fast</span>
+              </label>
+            }
+            @if (cursorEffort(); as effort) {
+              <label class="field">
+                <span>{{ effort.label }}</span>
+                <select [value]="cursorEffortValue()" (change)="onPawnCursorEffort($event)">
+                  @for (v of effort.values; track v.value) {
+                    <option [value]="v.value" [selected]="cursorEffortValue() === v.value">{{ v.label }}</option>
+                  }
+                </select>
+              </label>
+            }
+            <label class="field">
+              <span>Модель</span>
+              @if (modelsLoading()) {
+                <div class="models-preloader" aria-live="polite">
+                  <span class="btn-spinner" aria-hidden="true"></span>
+                  <span>Загрузка моделей…</span>
+                </div>
+              } @else {
+                <select [value]="cursorModelBase(llm.model)" (change)="onPawnCursorModel($event)">
+                  @for (m of cursorModels(); track m.id) {
+                    <option [value]="m.id" [selected]="cursorModelBase(llm.model) === m.id">{{ m.label }}</option>
+                  }
+                </select>
+                @if (modelsError()) {
+                  <span class="field-hint field-hint-error">{{ modelsError() }}</span>
+                } @else if (cursorCatalog().length > 0) {
+                  <span class="field-hint">{{ cursorCatalog().length }} моделей</span>
+                } @else {
+                  <span class="field-hint">Укажите Cursor API key — подтянем актуальные модели</span>
+                }
+              }
+            </label>
+          } @else {
+            <label class="field">
+              <span>Модель</span>
+              <input [value]="llm.model" (input)="onPawnModel($event)" placeholder="corp-gpt / qwen…" />
+            </label>
+          }
+          @if (needsCursorKey(llm.runner)) {
+            <label class="field">
+              <span>Cursor API key</span>
+              <input
+                type="password"
+                autocomplete="off"
+                [value]="llm.apiKey"
+                (input)="onPawnApiKey($event)"
+                placeholder="cursor_…"
+              />
+            </label>
+          }
+        }
+
+        @if (a.artifactPath) {
+          <div class="artifact-path"><span>📁</span> {{ a.artifactPath }}</div>
+        }
+        <div class="artifact-path">
+          <span>💾</span>
+          {{ a.saveRoot ? ('Репо: ' + a.saveRoot) : 'Layercoop (оркестрация)' }}
+        </div>
+
+        @if (a.view; as view) {
+          <div class="mcp-tools-panel">
+            <div class="mcp-tools-panel__title">{{ view.type === 'checklist' ? 'Чеклист' : 'Плитка / view' }}</div>
+            <app-node-view-render
+              [view]="view"
+              mode="full"
+              (toggleItem)="onToggleChecklist($event)"
+              (addItem)="onAddChecklist($event)"
+              (removeItem)="onRemoveChecklist($event)"
+            />
+            <div class="node-view-actions">
+              <button
+                type="button"
+                class="btn btn-small"
+                [disabled]="runtime.isNodeRunning(s.id) || !a.prompt.trim()"
+                (click)="refreshView()"
+                title="Повторный run ноды — обновит view из ответа"
+              >
+                Обновить
+              </button>
+              <button type="button" class="btn btn-small btn-ghost" (click)="clearView()">
+                Очистить view
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (a.kind === 'mcp') {
+          <div class="mcp-tools-panel">
+            <div class="mcp-tools-panel__title">MCP server</div>
+            @if (mcpServers().length === 0) {
+              <p class="mcp-tools-panel__empty">
+                В artifactContent нет валидного <code>mcpServers</code> — в ран SDK tools не попадут.
+              </p>
+            } @else {
+              <ul class="mcp-tools-panel__servers">
+                @for (srv of mcpServers(); track srv.name) {
+                  <li>
+                    <strong>{{ srv.name }}</strong>
+                    <span class="mcp-tools-panel__meta">{{ srv.transport }} · {{ srv.detail }}</span>
+                  </li>
+                }
+              </ul>
+            }
+            @if (mcpPreview()) {
+              <pre class="mcp-tools-panel__json">{{ mcpPreview() }}</pre>
+            }
+          </div>
+        }
+
+        @if ((a.kind === 'mcp' || a.kind === 'skill') && declaredTools().length > 0) {
+          <div class="mcp-tools-panel">
+            <div class="mcp-tools-panel__title">
+              Инструменты в описании
+              <span class="mcp-tools-panel__count">{{ declaredTools().length }}</span>
+            </div>
+            <ul class="mcp-tools-list">
+              @for (t of declaredTools(); track t) {
+                <li><code>{{ t }}</code></li>
+              }
+            </ul>
+          </div>
+        }
+        }
+      }
+    </div>
+  </div>
+}

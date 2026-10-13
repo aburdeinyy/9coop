@@ -1,0 +1,29 @@
+@if (settings.open()) {
+  <div class="settings-backdrop" (click)="backdrop($event)" role="presentation">
+    <div
+      class="settings-panel"
+      role="dialog"
+      aria-labelledby="settings-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="settings-panel__header">
+        <h2 id="settings-title">Настройки</h2>
+        <button type="button" class="btn btn-ghost btn-small" (click)="close()" title="Закрыть">
+          ✕
+        </button>
+      </div>
+
+      <label class="settings-row">
+        <span class="settings-row__text">
+          <span class="settings-row__label">Блюр под нодами</span>
+          <span class="settings-row__hint">Мягкое свечение на доске под каждой нодой</span>
+        </span>
+        <input
+          type="checkbox"
+          [checked]="settings.boardAuraEnabled()"
+          (change)="onBoardAura($event)"
+        />
+      </label>
+    </div>
+  </div>
+}

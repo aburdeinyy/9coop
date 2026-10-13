@@ -1,0 +1,18 @@
+{
+  "/cursor-api": {
+    "target": "https://api.cursor.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/cursor-api": ""
+    }
+  },
+  "/layercoop-bridge": {
+    "target": "http://127.0.0.1:7843",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/layercoop-bridge": ""
+    }
+  }
+}

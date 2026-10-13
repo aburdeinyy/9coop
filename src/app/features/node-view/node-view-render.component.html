@@ -1,0 +1,163 @@
+@if (mode === 'compact') {
+  <div class="node-view node-view--compact" (wheel)="$event.stopPropagation()">
+    @if (preview().title) {
+      <div class="node-view__title">{{ preview().title }}</div>
+    }
+    @if (view.type === 'checklist') {
+      <ul class="node-view__list node-view__checklist">
+        @for (line of preview().lines; track line.id ?? $index) {
+          <li>
+            <label
+              class="node-view__check"
+              [class.is-checked]="line.checked"
+              (pointerdown)="$event.stopPropagation()"
+              (click)="$event.stopPropagation()"
+            >
+              <input
+                type="checkbox"
+                [checked]="!!line.checked"
+                (change)="onToggle(line.id, $event)"
+              />
+              @if (line.href) {
+                <a [href]="line.href" target="_blank" rel="noopener noreferrer" (pointerdown)="$event.stopPropagation()" (click)="$event.stopPropagation()">{{ line.text }}</a>
+              } @else {
+                <span>{{ line.text }}</span>
+              }
+            </label>
+          </li>
+        }
+      </ul>
+      <div class="node-view__add" (pointerdown)="$event.stopPropagation()">
+        <input
+          [value]="draft"
+          (input)="onDraft($event)"
+          (keydown.enter)="submitAdd($event)"
+          placeholder="Новый пункт"
+          maxlength="200"
+        />
+        <button type="button" class="btn btn-small" [disabled]="!draft.trim()" (click)="submitAdd($event)">
+          +
+        </button>
+      </div>
+    } @else {
+      <ul class="node-view__list">
+        @for (line of preview().lines; track $index) {
+          <li class="node-view__row">
+            @if (statusIcon(line.meta); as icon) {
+              <span
+                class="node-view__status"
+                [attr.data-tone]="statusTone(line.meta)"
+                [title]="statusTitle(line.meta)"
+                aria-hidden="true"
+              >{{ icon }}</span>
+            }
+            <span class="node-view__row-body">
+              @if (line.href) {
+                <a [href]="line.href" target="_blank" rel="noopener noreferrer" (pointerdown)="$event.stopPropagation()" (click)="$event.stopPropagation()">{{ line.text }}</a>
+              } @else {
+                <span>{{ line.text }}</span>
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    }
+    @if (preview().more > 0) {
+      <div class="node-view__more">ещё {{ preview().more }}</div>
+    }
+  </div>
+} @else {
+  <div class="node-view node-view--full">
+    @if (view.title) {
+      <div class="node-view__title">{{ view.title }}</div>
+    }
+    @if (view.type === 'list') {
+      <ul class="node-view__list">
+        @for (item of listItems(); track $index) {
+          <li class="node-view__row">
+            @if (statusIcon(item.meta); as icon) {
+              <span
+                class="node-view__status"
+                [attr.data-tone]="statusTone(item.meta)"
+                [title]="statusTitle(item.meta)"
+                aria-hidden="true"
+              >{{ icon }}</span>
+            }
+            <div class="node-view__row-body">
+              @if (item.href) {
+                <a [href]="item.href" target="_blank" rel="noopener noreferrer">{{ item.text }}</a>
+              } @else {
+                <span>{{ item.text }}</span>
+              }
+              @if (item.meta) {
+                <span class="node-view__meta">{{ item.meta }}</span>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    } @else if (view.type === 'checklist') {
+      <ul class="node-view__list node-view__checklist">
+        @for (item of view.items; track item.id) {
+          <li>
+            <label
+              class="node-view__check"
+              [class.is-checked]="item.checked"
+              (pointerdown)="$event.stopPropagation()"
+              (click)="$event.stopPropagation()"
+            >
+              <input
+                type="checkbox"
+                [checked]="item.checked"
+                (change)="onToggle(item.id, $event)"
+              />
+              @if (item.href) {
+                <a [href]="item.href" target="_blank" rel="noopener noreferrer">{{ item.text }}</a>
+              } @else {
+                <span>{{ item.text }}</span>
+              }
+            </label>
+            <button
+              type="button"
+              class="node-view__remove"
+              title="Удалить пункт"
+              (pointerdown)="$event.stopPropagation()"
+              (click)="onRemove(item.id, $event)"
+            >
+              ✕
+            </button>
+          </li>
+        }
+      </ul>
+      <div class="node-view__add" (pointerdown)="$event.stopPropagation()">
+        <input
+          [value]="draft"
+          (input)="onDraft($event)"
+          (keydown.enter)="submitAdd($event)"
+          placeholder="Новый пункт"
+          maxlength="200"
+        />
+        <button type="button" class="btn btn-small" [disabled]="!draft.trim()" (click)="submitAdd($event)">
+          Добавить
+        </button>
+      </div>
+    } @else if (view.type === 'kv') {
+      <dl class="node-view__kv">
+        @for (row of view.rows; track $index) {
+          <div class="node-view__kv-row">
+            <dt>{{ row.key }}</dt>
+            <dd>
+              @if (row.href) {
+                <a [href]="row.href" target="_blank" rel="noopener noreferrer">{{ row.value }}</a>
+              } @else {
+                {{ row.value }}
+              }
+            </dd>
+          </div>
+        }
+      </dl>
+    } @else {
+      <pre class="node-view__md">{{ view.body }}</pre>
+    }
+  </div>
+}

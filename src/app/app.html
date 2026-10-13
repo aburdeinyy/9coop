@@ -1,0 +1,21 @@
+<div class="app" [class.resizing-sidebar]="resizing()">
+  <app-toolbar />
+  <app-secrets-panel />
+  <app-settings-panel />
+  <div class="workspace" [class.workspace--no-chat]="hideChatSidebar()">
+    <div class="canvas-area">
+      <app-graph-canvas />
+    </div>
+    @if (!hideChatSidebar()) {
+      <aside class="sidebar" [style.width.px]="sidebarWidth()">
+        <div
+          class="sidebar-resizer"
+          [class.active]="resizing()"
+          (pointerdown)="onResizeStart($event)"
+          title="Изменить ширину чата"
+        ></div>
+        <app-global-chat />
+      </aside>
+    }
+  </div>
+</div>

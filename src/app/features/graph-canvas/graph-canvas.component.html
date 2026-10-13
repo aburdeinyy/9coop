@@ -1,0 +1,426 @@
+<div
+  class="graph-canvas"
+  #canvasEl
+  (pointerdown)="onCanvasPointerDown($event)"
+  (click)="onCanvasClick()"
+  (wheel)="onWheel($event)"
+  (dragover)="onChatDragOver($event)"
+  (drop)="onChatDrop($event)"
+>
+  <!-- SVG: только сетка и рёбра -->
+  <svg class="graph-svg">
+    <defs>
+      <pattern id="grid" patternUnits="userSpaceOnUse"
+               [attr.width]="grid().width" [attr.height]="grid().height"
+               [attr.x]="grid().x" [attr.y]="grid().y">
+        <circle class="graph-grid-dot" [attr.cx]="grid().r" [attr.cy]="grid().r" [attr.r]="grid().r" />
+      </pattern>
+      <filter id="edge-glow" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="1.4" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#grid)" />
+
+    <g [attr.transform]="transform()">
+      @for (v of edgeVisuals(); track v.key) {
+        <path
+          class="graph-edge-glow"
+          [attr.d]="v.path"
+        />
+        <path
+          class="graph-edge"
+          [class.flowing]="visualEdgeFlowing(v)"
+          [class.in-context]="visualEdgeInContext(v)"
+          [class.connecting]="visualEdgeConnecting(v)"
+          [attr.d]="v.path"
+        />
+        <path
+          class="graph-edge-hit"
+          [attr.d]="v.path"
+          (pointerdown)="onVisualEdgePointerDown($event, v)"
+        >
+          <title>Клик — разорвать связь</title>
+        </path>
+      }
+      @if (wirePreview(); as d) {
+        <path class="graph-wire-preview" [attr.d]="d" />
+      }
+    </g>
+  </svg>
+
+  <!-- HTML-слой нод (абсолютное позиционирование) -->
+  <div class="nodes-layer">
+    @for (group of groups(); track group.id) {
+      @let gb = groupScreenBox(group);
+      <div
+        class="node-group-frame"
+        [style.left.px]="gb.left"
+        [style.top.px]="gb.top"
+        [style.width.px]="gb.width"
+        [style.height.px]="gb.height"
+        (pointerdown)="onGroupPointerDown($event, group)"
+      >
+        <div class="node-group-frame__bar">
+          <span class="node-group-frame__title">{{ groupMemberCountLabel(group.memberIds.length) }}</span>
+          <button
+            type="button"
+            class="node-group-frame__ungroup"
+            title="Разгруппировать"
+            (pointerdown)="$event.stopPropagation()"
+            (click)="ungroupClick($event, group.id)"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    }
+    @for (node of nodes(); track node.id) {
+      @if (settings.boardAuraEnabled()) {
+        @let aura = auraBox(node);
+        <div
+          class="node-aura"
+          [class.node-aura--god]="node.type === 'god'"
+          [class.node-aura--artifact]="node.type !== 'god'"
+          [style.left.px]="aura.left"
+          [style.top.px]="aura.top"
+          [style.width.px]="aura.width"
+          [style.height.px]="aura.height"
+          [style.transform]="'scale(' + zoom() + ')'"
+          [style.transform-origin]="'0 0'"
+          aria-hidden="true"
+        ></div>
+      }
+      @if (node.type === 'god') {
+        <div
+          class="node god-node"
+          [class.selected]="selectedId() === node.id"
+          [class.runtime-active]="runtime.isNodeActive(node.id)"
+          [class.runtime-context]="runtime.isNodeInContext(node.id)"
+          [class.multi-selected]="graphService.isMultiSelected(node.id)"
+          [class.linking]="graphService.isNodeLinking(node.id)"
+          [class.link-source]="graphService.linkingFromId() === node.id"
+          [class.wire-target]="wireHoverTargetId() === node.id"
+          [style.left.px]="node.position.x * zoom() + pan().x"
+          [style.top.px]="node.position.y * zoom() + pan().y"
+          [style.width.px]="godW"
+          [style.height.px]="godH"
+          [style.transform]="'scale(' + zoom() + ')'"
+          [style.transform-origin]="'0 0'"
+          (pointerdown)="onNodePointerDown($event, node)"
+          (click)="onNodeClick($event, node.id)"
+          (contextmenu)="onNodeContextMenu($event, node.id)"
+        >
+          <button
+            type="button"
+            class="node-settings-btn"
+            title="Настройки"
+            aria-label="Настройки"
+            (pointerdown)="$event.stopPropagation()"
+            (click)="$event.stopPropagation(); openSettings(node.id)"
+          >
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+              <circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4" />
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"
+              />
+            </svg>
+          </button>
+          @for (side of portSides; track side) {
+            <button
+              type="button"
+              class="node-port"
+              [class.node-port--left]="side === 'left'"
+              [class.node-port--right]="side === 'right'"
+              [class.node-port--top]="side === 'top'"
+              [class.node-port--bottom]="side === 'bottom'"
+              title="Потяните к другой ноде"
+              (pointerdown)="onPortPointerDown($event, node, side)"
+              (click)="$event.stopPropagation()"
+            ></button>
+          }
+          <div class="god-halo"></div>
+          <div class="god-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="16" height="16">
+              <path fill="currentColor" d="M9.2 1.2 3.4 9.1h3.2L6.2 14.8 12.6 6.4H9.1L9.2 1.2z" />
+            </svg>
+          </div>
+          <div class="node-title">{{ asGod(node.data).label }}</div>
+          <div
+            class="node-subtitle"
+            [title]="asGod(node.data).model || 'GOD-node'"
+          >
+            {{
+              node.id === godPrimaryId
+                ? modelLabel(asGod(node.data).model) || 'GOD-node'
+                : 'sub · ' + (modelLabel(asGod(node.data).model) || runnerLabels[asGod(node.data).runner])
+            }}
+          </div>
+        </div>
+      } @else if (isArtifact(node)) {
+        <div
+          class="node artifact-node"
+          [class.selected]="selectedId() === node.id"
+          [class.runtime-active]="runtime.isNodeActive(node.id)"
+          [class.runtime-context]="runtime.isNodeInContext(node.id)"
+          [class.multi-selected]="graphService.isMultiSelected(node.id)"
+          [class.linking]="graphService.isNodeLinking(node.id)"
+          [class.link-source]="graphService.linkingFromId() === node.id"
+          [class.wire-target]="wireHoverTargetId() === node.id"
+          [class.artifact-node--has-view]="!!asArtifact(node.data).view"
+          [class.artifact-node--repo]="asArtifact(node.data).kind === 'repo'"
+          [style.left.px]="node.position.x * zoom() + pan().x"
+          [style.top.px]="node.position.y * zoom() + pan().y"
+          [style.width.px]="artifactSize(node).w"
+          [style.height.px]="artifactSize(node).h"
+          [style.transform]="'scale(' + zoom() + ')'"
+          [style.transform-origin]="'0 0'"
+          (pointerdown)="onNodePointerDown($event, node)"
+          (click)="onNodeClick($event, node.id)"
+          (contextmenu)="onNodeContextMenu($event, node.id)"
+        >
+          <button
+            type="button"
+            class="node-settings-btn"
+            title="Настройки"
+            aria-label="Настройки"
+            (pointerdown)="$event.stopPropagation()"
+            (click)="$event.stopPropagation(); openSettings(node.id)"
+          >
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+              <circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4" />
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="node-resize-handle"
+            title="Изменить размер"
+            aria-label="Изменить размер"
+            (pointerdown)="onResizePointerDown($event, node)"
+            (click)="$event.stopPropagation()"
+          ></button>
+          @for (side of portSides; track side) {
+            <button
+              type="button"
+              class="node-port"
+              [class.node-port--left]="side === 'left'"
+              [class.node-port--right]="side === 'right'"
+              [class.node-port--top]="side === 'top'"
+              [class.node-port--bottom]="side === 'bottom'"
+              title="Потяните к другой ноде"
+              (pointerdown)="onPortPointerDown($event, node, side)"
+              (click)="$event.stopPropagation()"
+            >            </button>
+          }
+          @if (asArtifact(node.data).autoRefresh; as refresh) {
+            <div
+              class="node-cron"
+              (pointerdown)="$event.stopPropagation()"
+              [title]="cronHint(node.id, refresh.intervalMs)"
+            >
+              <span class="node-cron-icon" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="12" height="12">
+                  <circle cx="8" cy="8" r="5.2" fill="none" stroke="currentColor" stroke-width="1.4" />
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    d="M8 5.2V8l2 1.4"
+                  />
+                </svg>
+              </span>
+              <span class="node-cron-label">{{ refreshLabel(refresh.intervalMs) }}</span>
+              <button
+                type="button"
+                class="node-cron-run"
+                title="Обновить сейчас"
+                aria-label="Обновить сейчас"
+                [disabled]="viewRefresh.refreshingNodeId() === node.id"
+                (click)="forceCronRefresh(node.id); $event.stopPropagation()"
+              >
+                ↻
+              </button>
+            </div>
+          }
+          <div class="node-title">
+            {{ asArtifact(node.data).label }}
+          </div>
+          @if (asArtifact(node.data).view; as view) {
+            <app-node-view-render
+              class="artifact-node-view"
+              [view]="view"
+              mode="compact"
+              [nodeHeight]="artifactSize(node).h"
+              (toggleItem)="graphService.toggleChecklistItem(node.id, $event)"
+              (addItem)="graphService.addChecklistItem(node.id, $event)"
+            />
+          } @else if (asArtifact(node.data).kind === 'repo') {
+            <div class="repo-node-body" (pointerdown)="$event.stopPropagation()">
+              <div class="repo-node-meta">
+                <span
+                  class="repo-badge"
+                  [class.repo-badge--cwd]="cwdRepoId() === node.id"
+                  [class.repo-badge--err]="!!repoGit.statusFor(node.id)?.error"
+                  [title]="repoGit.statusFor(node.id)?.error || (repoGit.statusFor(node.id)?.branch || 'git')"
+                >
+                  @if (cwdRepoId() === node.id) {
+                    cwd ·
+                  }
+                  {{ repoBadge(node.id) }}
+                  @if (repoBadge(node.id) !== 'clean' && repoBadge(node.id) !== '…' && repoBadge(node.id) !== '!') {
+                    файлов
+                  }
+                </span>
+                <button
+                  type="button"
+                  class="repo-refresh-btn"
+                  title="Обновить статус"
+                  (click)="refreshRepo(node.id); $event.stopPropagation()"
+                >
+                  ↻
+                </button>
+              </div>
+              @if (repoGit.statusFor(node.id); as st) {
+                @if (st.error) {
+                  <div class="repo-node-error">{{ st.error }}</div>
+                } @else if (st.files.length === 0) {
+                  <div class="repo-node-empty">Нет изменений</div>
+                } @else {
+                  <ul class="repo-node-files">
+                    @for (f of st.files.slice(0, 8); track f.path) {
+                      <li>
+                        <button
+                          type="button"
+                          class="repo-node-file"
+                          (click)="openRepoDiff(node.id, f.path); $event.stopPropagation()"
+                          [title]="f.path"
+                        >
+                          <span class="repo-file-status">{{ f.status }}</span>
+                          <span class="repo-file-path">{{ f.path }}</span>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                  @if (st.files.length > 8) {
+                    <div class="repo-node-more">ещё {{ st.files.length - 8 }}</div>
+                  }
+                }
+              } @else {
+                <div class="repo-node-empty">Загрузка…</div>
+              }
+            </div>
+          } @else if (asArtifact(node.data).kind === 'pawn' && asArtifact(node.data).llm; as llm) {
+            <div class="node-prompt-preview">{{ runnerLabels[llm.runner] }} · {{ modelLabel(llm.model) || 'model?' }}</div>
+          } @else if (asArtifact(node.data).prompt) {
+            <div class="node-prompt-preview">{{ asArtifact(node.data).prompt.slice(0, 60) }}…</div>
+          }
+          @if (asArtifact(node.data).artifactContent && asArtifact(node.data).kind !== 'repo') {
+            <div class="artifact-badge">✓ артефакт</div>
+          }
+        </div>
+      }
+    }
+  </div>
+
+  @if (chatBubblePos(); as pos) {
+    <app-node-chat-bubble
+      [class.node-chat-bubble-host--left]="pos.side === 'left'"
+      [style.left.px]="pos.left"
+      [style.top.px]="pos.top"
+      [style.max-height.px]="pos.maxHeight"
+    />
+  }
+
+  @if (nodeMenu(); as menu) {
+    <div
+      class="node-ctx-menu"
+      role="menu"
+      [style.left.px]="menu.x"
+      [style.top.px]="menu.y"
+      (pointerdown)="$event.stopPropagation()"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="node-ctx-menu__item" role="menuitem" (click)="menuOpenSettings()">
+        Настройки
+      </button>
+      @if (menuCanSelectGroup()) {
+        <button type="button" class="node-ctx-menu__item" role="menuitem" (click)="menuSelectGroup()">
+          Выделить группу
+        </button>
+      }
+      @if (menuCanUngroup()) {
+        <button type="button" class="node-ctx-menu__item" role="menuitem" (click)="menuUngroup()">
+          Разгруппировать
+        </button>
+      }
+      @if (menuCanDelete()) {
+        <button
+          type="button"
+          class="node-ctx-menu__item node-ctx-menu__item--danger"
+          role="menuitem"
+          (click)="menuDelete()"
+        >
+          Удалить
+        </button>
+      }
+      <div class="node-ctx-menu__sep" role="separator"></div>
+      <div class="node-ctx-menu__section">Пайпы</div>
+      @if (menuPipes().length === 0) {
+        <div class="node-ctx-menu__empty">Пайпов не найдено</div>
+      } @else {
+        @for (p of menuPipes(); track p.id) {
+          <button
+            type="button"
+            class="node-ctx-menu__item"
+            role="menuitem"
+            [disabled]="runtime.isNodeRunning(menu.nodeId)"
+            (click)="menuRunPipe(p.id)"
+            [title]="p.prompt || p.label"
+          >
+            {{ p.label }}
+          </button>
+        }
+      }
+    </div>
+  }
+
+  @if (diffOpen(); as diff) {
+    <div class="repo-diff-overlay" (click)="closeDiff()">
+      <div class="repo-diff-modal" (click)="$event.stopPropagation()" role="dialog" aria-label="Diff">
+        <div class="repo-diff-header">
+          <strong>{{ diff.file }}</strong>
+          <button type="button" class="btn btn-ghost btn-small" (click)="closeDiff()">Закрыть</button>
+        </div>
+        @if (diffError()) {
+          <p class="repo-diff-error">{{ diffError() }}</p>
+        }
+        <pre class="repo-diff-patch">{{ diff.patch }}</pre>
+      </div>
+    </div>
+  }
+
+  <div class="canvas-controls">
+    <button type="button" class="btn btn-ghost" (click)="zoomIn(); $event.stopPropagation()" aria-label="Приблизить" title="Приблизить">+</button>
+    <button type="button" class="btn btn-ghost" (click)="zoomOut(); $event.stopPropagation()" aria-label="Отдалить" title="Отдалить">−</button>
+    <button type="button" class="btn btn-ghost" (click)="resetView(); $event.stopPropagation()" aria-label="Сбросить масштаб" title="Сбросить масштаб">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
+      </svg>
+    </button>
+  </div>
+</div>

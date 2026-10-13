@@ -1,0 +1,211 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.prompt-shell {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 6px 6px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid color-mix(in srgb, white 8%, var(--border));
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+
+  &--running {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  }
+}
+
+.prompt-input {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  resize: none;
+  overflow-y: auto;
+  box-sizing: border-box;
+  height: 28px;
+  min-height: 28px;
+  max-height: 160px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 28px;
+  padding: 0;
+  margin: 0;
+  field-sizing: fixed;
+
+  &::placeholder {
+    color: var(--text-muted);
+  }
+}
+
+.prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-bottom: 0;
+}
+
+.prompt-icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):active {
+    transform: scale(0.96);
+  }
+}
+
+.prompt-icon-btn--send {
+  background: linear-gradient(165deg, var(--accent-light), var(--accent));
+  color: #0c1218;
+
+  &:not(:disabled):hover {
+    background: linear-gradient(165deg, #5fd4c4, var(--accent-light));
+  }
+}
+
+.prompt-icon-btn--stop {
+  background: color-mix(in srgb, var(--error) 22%, var(--bg-base));
+  color: var(--error);
+  border: 1px solid color-mix(in srgb, var(--error) 40%, transparent);
+
+  &:hover {
+    background: color-mix(in srgb, var(--error) 32%, var(--bg-base));
+  }
+}
+
+.prompt-icon-stop {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.chat-steps-accordion {
+  margin: 0 0 8px;
+  border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, white 6%, var(--border));
+  background: color-mix(in srgb, var(--bg-base) 70%, transparent);
+
+  summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: var(--text-muted);
+    user-select: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: '▸ ';
+      color: var(--accent-light);
+    }
+  }
+
+  &[open] summary::before {
+    content: '▾ ';
+  }
+}
+
+.chat-steps-prior {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 10px 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.chat-step {
+  border-radius: var(--r-md);
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+  border: 1px solid transparent;
+}
+
+.chat-step--latest {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent-dim) 35%, var(--bg-elevated));
+}
+
+.chat-step--running {
+  border-color: color-mix(in srgb, var(--accent-light) 55%, var(--border));
+}
+
+.chat-step--done {
+  opacity: 0.85;
+}
+
+.chat-step-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.chat-step--tool .chat-step-label {
+  color: var(--accent-light);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+}
+
+.chat-step-body {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.chat-step-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  animation: run-pulse 1.4s ease-out infinite;
+}
+
+.chat-step-tool-name {
+  font-weight: 600;
+  color: var(--accent-light);
+}

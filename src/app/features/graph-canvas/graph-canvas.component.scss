@@ -1,0 +1,395 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.graph-canvas {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-canvas);
+  user-select: none;
+  -webkit-user-select: none;
+
+  &.is-dragging {
+    cursor: grabbing;
+  }
+}
+
+.node-aura {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(22px);
+  z-index: 0;
+  opacity: 0.55;
+}
+
+.node-aura--god {
+  background: radial-gradient(
+    circle,
+    rgba(224, 168, 46, 0.38) 0%,
+    rgba(224, 168, 46, 0.1) 48%,
+    transparent 72%
+  );
+}
+
+.node-aura--artifact {
+  background: radial-gradient(
+    circle,
+    rgba(78, 201, 184, 0.34) 0%,
+    rgba(47, 158, 144, 0.1) 48%,
+    transparent 72%
+  );
+}
+
+.graph-svg {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+}
+
+.graph-grid-dot {
+  fill: color-mix(in srgb, var(--border) 65%, transparent);
+}
+
+.node-group-frame {
+  position: absolute;
+  z-index: 0;
+  box-sizing: border-box;
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--border));
+  border-radius: 14px;
+  /* Стекло поверх SVG-связей: лёгкое размытие линков под рамкой */
+  background: color-mix(in srgb, var(--bg-elevated) 22%, transparent);
+  -webkit-backdrop-filter: blur(2px) saturate(1.1);
+  backdrop-filter: blur(2px) saturate(1.1);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 6%, transparent);
+  pointer-events: auto;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.node-group-frame__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.node-group-frame__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-group-frame__ungroup {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text);
+    background: color-mix(in srgb, var(--bg-elevated) 70%, transparent);
+  }
+}
+
+.nodes-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none; // сквозь слой, события только на дочерних нодах
+
+  > .node {
+    position: absolute;
+    z-index: 1;
+    pointer-events: all;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    &:active { cursor: grabbing; }
+  }
+}
+
+.graph-edge-glow {
+  fill: none;
+  stroke: rgba(212, 160, 23, 0.28);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.graph-edge {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 0.75;
+  stroke-linecap: round;
+  stroke-dasharray: 8 6;
+  opacity: 0.95;
+  filter: url(#edge-glow);
+  animation: edge-idle-flow 1.6s linear infinite;
+}
+
+.graph-edge.connecting {
+  stroke: var(--gold-light);
+  stroke-width: 1;
+  stroke-dasharray: 10 5;
+  opacity: 1;
+  animation: edge-connect-burst 1.25s ease-out both;
+}
+
+.graph-edge.flowing {
+  stroke: var(--accent-light);
+  stroke-width: 0.9;
+  opacity: 1;
+  animation: edge-flow 0.55s linear infinite;
+}
+
+.graph-edge.in-context {
+  stroke: var(--accent);
+  stroke-width: 0.95;
+  opacity: 1;
+  stroke-dasharray: none;
+  animation: none;
+}
+
+.graph-edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.graph-wire-preview {
+  fill: none;
+  stroke: var(--accent-light);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.graph-canvas.is-wiring {
+  cursor: crosshair;
+
+  .nodes-layer > .node {
+    cursor: crosshair;
+  }
+}
+
+@keyframes edge-idle-flow {
+  to { stroke-dashoffset: -14; }
+}
+
+@keyframes edge-flow {
+  to { stroke-dashoffset: -14; }
+}
+
+@keyframes edge-connect-burst {
+  0% {
+    stroke-dashoffset: 80;
+    stroke-width: 0.4;
+    opacity: 0.35;
+    filter: url(#edge-glow);
+  }
+  35% {
+    stroke-width: 1.2;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -40;
+    stroke-width: 0.75;
+    opacity: 0.95;
+  }
+}
+
+.canvas-controls {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  border: 1px solid color-mix(in srgb, white 8%, var(--border));
+  border-radius: var(--r-md);
+  padding: 6px;
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.canvas-controls .btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  justify-content: center;
+  font-size: 14px;
+
+  svg {
+    display: block;
+  }
+}
+
+.link-mode-hint {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: var(--r-lg);
+  color: var(--text-primary);
+  font-size: 12px;
+  box-shadow: var(--shadow-md);
+  pointer-events: all;
+}
+
+.repo-diff-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: rgba(6, 10, 16, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: all;
+}
+
+.repo-diff-modal {
+  width: min(860px, 100%);
+  max-height: min(80vh, 720px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.repo-diff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.repo-diff-error {
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--error);
+  font-size: 12px;
+}
+
+.repo-diff-patch {
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  flex: 1;
+  font-family: 'Fira Code', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+  color: var(--text-secondary);
+}
+
+.node-ctx-menu {
+  position: absolute;
+  z-index: 40;
+  min-width: 180px;
+  max-width: 260px;
+  max-height: min(70vh, 420px);
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  box-shadow: var(--shadow-lg);
+  scrollbar-width: thin;
+}
+
+.node-ctx-menu__item {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-hover);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  &--danger {
+    color: var(--error, #f48771);
+  }
+}
+
+.node-ctx-menu__sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-subtle);
+}
+
+.node-ctx-menu__section {
+  padding: 6px 10px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.node-ctx-menu__empty {
+  padding: 6px 10px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}

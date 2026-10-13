@@ -1,0 +1,282 @@
+<div class="global-chat">
+  <div class="global-chat-header">
+    <h3
+      class="global-chat-header__drag"
+      [attr.draggable]="!!activeThreadId()"
+      (dragstart)="onHeaderDragStart($event)"
+      [title]="activeThreadId() ? 'Потяните на доску — создать ноду из чата' : null"
+    >{{ headerTitle() }}</h3>
+    <div class="global-chat-header-actions">
+      <span
+        class="connected-badge"
+        [class.has-nodes]="graphService.connectedCount() > 0"
+        [class.is-running]="runtime.isRunning()"
+      >
+        @if (runtime.isRunning()) {
+          <span class="run-pulse" aria-hidden="true"></span>
+          @if (runtime.lastToolCall()) {
+            tool: {{ runtime.lastToolCall() }}
+          } @else {
+            выполняется…
+          }
+        } @else {
+          {{ statusLabel() }}
+        }
+      </span>
+      @if (graphService.selectedNodeId()) {
+        <button
+          type="button"
+          class="btn btn-ghost btn-small chat-header-btn"
+          (click)="closeChat()"
+          title="Закрыть чат"
+          aria-label="Закрыть чат"
+        >
+          ✕
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (graphService.selectedNodeId()) {
+    <div class="chat-tabs" role="tablist" aria-label="Чаты">
+      <div class="chat-tabs-scroll">
+        @for (t of threads(); track t.id) {
+          <button
+            type="button"
+            class="chat-tab"
+            role="tab"
+            draggable="true"
+            [class.chat-tab--active]="t.id === activeThreadId()"
+            [attr.aria-selected]="t.id === activeThreadId()"
+            (click)="selectThread(t.id)"
+            (dragstart)="onChatDragStart($event, t.id)"
+            [title]="t.title + ' · потяните на доску'"
+          >
+            <span class="chat-tab-title">{{ t.title }}</span>
+            @if (threads().length > 1) {
+              <span
+                class="chat-tab-close"
+                role="button"
+                tabindex="0"
+                draggable="false"
+                title="Закрыть чат"
+                aria-label="Закрыть чат"
+                (click)="deleteThread(t.id, $event)"
+                (keydown.enter)="deleteThread(t.id, $event)"
+              >
+                ×
+              </span>
+            }
+          </button>
+        }
+      </div>
+      <button
+        type="button"
+        class="chat-tab-add"
+        (click)="newThread()"
+        title="Новый чат"
+        aria-label="Новый чат"
+      >
+        +
+      </button>
+    </div>
+  }
+
+  <div class="chat-messages" #messagesEl>
+    @if (!graphService.selectedNodeId()) {
+      <div class="chat-empty">
+        <div class="chat-empty-text">Выберите ноду на доске, чтобы открыть её чат.</div>
+      </div>
+    } @else if (messages().length === 0) {
+      <div class="chat-empty">
+        <svg class="chat-empty-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+            d="M5 6.5h14v9H8.5L5 18.5V6.5z"
+          />
+        </svg>
+        <div class="chat-empty-text">{{ emptyHint() }}</div>
+      </div>
+    } @else {
+      @for (msg of messages(); track msg.id; let last = $last) {
+        <div class="chat-message chat-message-{{ msg.role }}">
+          @if (msg.role !== 'user') {
+            <div class="chat-role">{{ assistantLabel() }}</div>
+          }
+          @if (isPendingMessage(msg.id, last)) {
+            <div class="chat-content chat-content-pending" aria-live="polite">
+              <span class="typing-indicator" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </span>
+              <span class="pending-label">выполнение графа</span>
+            </div>
+          } @else if (messageSteps(msg).length) {
+            @if (priorSteps(messageSteps(msg)); as prior) {
+              @if (prior.length) {
+                <details class="chat-steps-accordion">
+                  <summary>
+                    {{ prior.length }} {{ prior.length === 1 ? 'шаг' : prior.length < 5 ? 'шага' : 'шагов' }} ранее
+                  </summary>
+                  <div class="chat-steps-prior">
+                    @for (step of prior; track step.id) {
+                      <div class="chat-step chat-step--{{ step.kind }} chat-step--done">
+                        <div class="chat-step-label">
+                          @if (step.kind === 'tool') {
+                            {{ step.label }}
+                          } @else {
+                            {{ stepPreview(step) }}
+                          }
+                        </div>
+                        @if (step.kind === 'thought' && step.text.trim()) {
+                          <div class="chat-step-body" [innerHTML]="stepBodyHtml(step)"></div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </details>
+              }
+            }
+            @if (latestStep(messageSteps(msg)); as step) {
+              <div
+                class="chat-step chat-step--{{ step.kind }} chat-step--latest"
+                [class.chat-step--running]="step.status === 'running'"
+                aria-live="polite"
+              >
+                <div class="chat-step-label">
+                  @if (step.kind === 'tool') {
+                    <span class="chat-step-pulse" aria-hidden="true"></span>
+                    {{ step.label }}
+                  } @else if (step.status === 'running') {
+                    <span class="chat-step-pulse" aria-hidden="true"></span>
+                    мысль
+                  } @else {
+                    ответ
+                  }
+                </div>
+                <div
+                  class="chat-step-body"
+                  [class.chat-content-streaming]="step.status === 'running' && last"
+                  [innerHTML]="stepBodyHtml(step)"
+                ></div>
+              </div>
+            }
+            @if (wizardOf(msg.content); as wiz) {
+              <div class="chat-wizard">
+                @if (wiz.step && wiz.total) {
+                  <div class="chat-wizard-step">{{ wiz.step }} / {{ wiz.total }}</div>
+                }
+                <div class="chat-wizard-q">{{ wiz.question }}</div>
+                <div class="chat-wizard-options">
+                  @for (opt of wiz.options; track opt.id) {
+                    <button
+                      type="button"
+                      class="chat-wizard-opt"
+                      [disabled]="!canPickWizard(last)"
+                      (click)="pickWizard(opt)"
+                    >
+                      <span class="chat-wizard-key">{{ opt.id }}</span>
+                      <span>{{ opt.label }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          } @else {
+            @if (chatBody(msg.content)) {
+              <div
+                class="chat-content"
+                [class.chat-content-streaming]="isStreamingMessage(msg.id, last)"
+                [innerHTML]="chatHtml(msg.content)"
+              ></div>
+            }
+            @if (wizardOf(msg.content); as wiz) {
+              <div class="chat-wizard">
+                @if (wiz.step && wiz.total) {
+                  <div class="chat-wizard-step">{{ wiz.step }} / {{ wiz.total }}</div>
+                }
+                <div class="chat-wizard-q">{{ wiz.question }}</div>
+                <div class="chat-wizard-options">
+                  @for (opt of wiz.options; track opt.id) {
+                    <button
+                      type="button"
+                      class="chat-wizard-opt"
+                      [disabled]="!canPickWizard(last)"
+                      (click)="pickWizard(opt)"
+                    >
+                      <span class="chat-wizard-key">{{ opt.id }}</span>
+                      <span>{{ opt.label }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          }
+          @if (msg.role === 'assistant' && msg.stats; as stats) {
+            <div class="chat-run-stats" [title]="statsLabel(stats)">
+              @if (stats.usage; as usage) {
+                <div class="chat-run-stats-bar" aria-hidden="true">
+                  @for (seg of statsBar(usage); track seg.key) {
+                    <span
+                      class="chat-run-stats-seg chat-run-stats-seg--{{ seg.key }}"
+                      [style.width.%]="seg.pct"
+                    ></span>
+                  }
+                </div>
+              }
+              <div class="chat-run-stats-label">{{ statsLabel(stats) }}</div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+
+  @if (graphService.selectedNodeId(); as nodeId) {
+    <div class="chat-compose">
+      <div class="prompt-shell" [class.prompt-shell--running]="selectedChatRunning()">
+        <textarea
+          #promptEl
+          class="prompt-input"
+          [value]="input()"
+          (input)="onInput($event)"
+          (keydown)="onKeyDown($event)"
+          rows="1"
+          placeholder="Сообщение…"
+          title="Enter — отправить, Shift+Enter — новая строка"
+        ></textarea>
+        <div class="prompt-actions">
+          @if (selectedChatRunning()) {
+            <button
+              type="button"
+              class="prompt-icon-btn prompt-icon-btn--stop"
+              (click)="stop()"
+              title="Остановить"
+              aria-label="Остановить"
+            >
+              <span class="prompt-icon-stop" aria-hidden="true"></span>
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="prompt-icon-btn prompt-icon-btn--send"
+              [disabled]="!input().trim() || selectedChatRunning()"
+              (click)="submit()"
+              title="Отправить"
+              aria-label="Отправить"
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M8 2.2 3.4 6.8l.9.9L7.3 4.7V14h1.4V4.7l3 3 .9-.9L8 2.2z"
+                />
+              </svg>
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
