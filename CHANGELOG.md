@@ -5,3 +5,11 @@
 
 * **release:** MIT, semantic-release и CLI для npx layercoop ([e3136f7](https://github.com/aburdeinyy/9coop/commit/e3136f736a7b4eefbcf9f673bac4ca2b242ef4eb))
 * **release:** MIT, semantic-release и CLI для npx layercoop [#2](https://github.com/aburdeinyy/9coop/issues/2) ([d08237d](https://github.com/aburdeinyy/9coop/commit/d08237d7ff6a062c71298766a34c6801fe9d96cc))
+
+# 1.0.0 (2026-10-13)
+
+
+### Features
+
+* **release:** MIT, semantic-release и CLI для npx layercoop ([e3136f7](https://github.com/aburdeinyy/9coop/commit/e3136f736a7b4eefbcf9f673bac4ca2b242ef4eb))
+* **release:** MIT, semantic-release и CLI для npx layercoop [#2](https://github.com/aburdeinyy/9coop/issues/2) ([d08237d](https://github.com/aburdeinyy/9coop/commit/d08237d7ff6a062c71298766a34c6801fe9d96cc))
