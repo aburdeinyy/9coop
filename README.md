@@ -58,7 +58,7 @@ OAuth к claude.ai сторонним приложениям [запрещён](
 
 ## Релиз
 
-Публикация идёт через [semantic-release](https://semantic-release.org/) на push в `develop` / `main` (workflow `.github/workflows/release.yml`).
+Публикация идёт через [semantic-release](https://semantic-release.org/) на push в `develop` / `release` (workflow `.github/workflows/release.yml`).
 
 1. В GitHub → Settings → Secrets → Actions добавь `NPM_TOKEN` (npm Automation token).
 2. Коммиты в формате Conventional Commits: `feat(…)`, `fix(…)`, `chore(…)` — от них считается версия.
