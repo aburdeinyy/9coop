@@ -54,6 +54,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function synthesizeToolCallId(index: number, name: string): string {
+  const safe = name.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 40) || 'tool';
+  return `call_${index}_${safe}`;
+}
+
+/** OpenWebUI/DeepSeek иногда шлёт tool_calls без id — раньше такие вызовы отбрасывались. */
 export function extractToolCalls(payload: unknown): ExtractedToolCall[] {
   if (!isRecord(payload) || !Array.isArray(payload['choices'])) return [];
   const choice = payload['choices'][0];
@@ -62,12 +68,14 @@ export function extractToolCalls(payload: unknown): ExtractedToolCall[] {
   if (!Array.isArray(raw)) return [];
 
   const out: ExtractedToolCall[] = [];
-  for (const item of raw) {
+  for (let i = 0; i < raw.length; i++) {
+    const item = raw[i];
     if (!isRecord(item) || !isRecord(item['function'])) continue;
-    const id = typeof item['id'] === 'string' ? item['id'] : '';
     const name =
-      typeof item['function']['name'] === 'string' ? item['function']['name'] : '';
-    if (!id || !name) continue;
+      typeof item['function']['name'] === 'string' ? item['function']['name'].trim() : '';
+    if (!name) continue;
+    const rawId = typeof item['id'] === 'string' ? item['id'].trim() : '';
+    const id = rawId || synthesizeToolCallId(i, name);
     let args: Record<string, unknown> = {};
     const rawArgs = item['function']['arguments'];
     if (typeof rawArgs === 'string' && rawArgs.trim()) {
@@ -83,6 +91,23 @@ export function extractToolCalls(payload: unknown): ExtractedToolCall[] {
     out.push({ id, name, arguments: args });
   }
   return out;
+}
+
+/** Синхронизирует id в assistant.tool_calls с extractToolCalls (для tool_call_id). */
+export function withNormalizedToolCallIds(
+  message: Record<string, unknown>,
+  calls: ExtractedToolCall[],
+): Record<string, unknown> {
+  const raw = message['tool_calls'];
+  if (!Array.isArray(raw) || calls.length === 0) return message;
+  return {
+    ...message,
+    tool_calls: raw.map((item, i) => {
+      if (!isRecord(item)) return item;
+      const id = calls[i]?.id;
+      return id ? { ...item, id } : item;
+    }),
+  };
 }
 
 export function assistantMessageFromPayload(payload: unknown): Record<string, unknown> | null {
@@ -161,11 +186,30 @@ export async function runOpenAiToolLoop(
 
     const toolCalls = extractToolCalls(lastJson);
     if (toolCalls.length === 0) {
+      const text = contentFromPayload(lastJson).trim();
+      if (!text && round > 0) {
+        return {
+          status: 200,
+          json: {
+            choices: [
+              {
+                message: {
+                  role: 'assistant',
+                  content:
+                    'Модель завершила tool-вызовы без текстового ответа. Повторите запрос или упростите задачу.',
+                },
+              },
+            ],
+          },
+        };
+      }
       return { status: 200, json: lastJson };
     }
 
     const assistantMsg = assistantMessageFromPayload(lastJson);
-    if (assistantMsg) messages.push(assistantMsg);
+    if (assistantMsg) {
+      messages.push(withNormalizedToolCallIds(assistantMsg, toolCalls));
+    }
 
     for (const call of toolCalls) {
       const decoded = decodeMcpToolName(call.name);
