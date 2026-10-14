@@ -428,6 +428,7 @@ export class GraphService {
 
   /**
    * Wizard/view из ответа ассистента.
+   * Wizard done в чате GOD → новая artifact-нода на доске.
    * Чеклист в чате GOD → новая нода на доске.
    * list/checklist + opts.spawn → новая нода (MR pipeline и т.п.).
    * list/kv/markdown в чате GOD без spawn → не создаём ноду.
@@ -448,7 +449,8 @@ export class GraphService {
       !!view &&
       (view.type === 'list' || view.type === 'checklist');
     const spawnChecklistFromGod = node.type === 'god' && view?.type === 'checklist';
-    const spawnNew = explicitSpawn || spawnChecklistFromGod;
+    const spawnWizardFromGod = node.type === 'god' && !!done;
+    const spawnNew = explicitSpawn || spawnChecklistFromGod || spawnWizardFromGod;
 
     if (!spawnNew && node.type !== 'artifact') return null;
 

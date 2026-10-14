@@ -175,4 +175,64 @@ describe('node wizard', () => {
     expect(node.data.prompt).toContain('ревью merge request');
     expect(node.data.kind).toBe('skill');
   });
+
+  it('applyAssistantArtifacts: wizard done в чате GOD создаёт MCP-ноду на доске', () => {
+    const memory = new Map<string, string>();
+    const storage = {
+      getItem: (k: string) => memory.get(k) ?? null,
+      setItem: (k: string, v: string) => void memory.set(k, v),
+      removeItem: (k: string) => void memory.delete(k),
+    };
+    const svc = new GraphService(storage);
+    const subId = svc.addGodNode({ label: 'OpenWebUI' });
+    const before = svc.graph().nodes.length;
+    const id = svc.applyAssistantArtifacts(
+      subId,
+      {
+        done: true,
+        label: 'repos-fs',
+        prompt: 'Filesystem MCP по нодам-репозиториям графа.',
+        kind: 'mcp',
+        saveTarget: 'save:home',
+      },
+      null,
+    );
+    expect(id).toBeTruthy();
+    expect(id).not.toBe(subId);
+    expect(id).not.toBe(GOD_NODE_ID);
+    expect(svc.graph().nodes.length).toBe(before + 1);
+    const node = svc.graph().nodes.find((n) => n.id === id);
+    expect(node?.type).toBe('artifact');
+    if (node?.type !== 'artifact') throw new Error('artifact');
+    expect(node.data.kind).toBe('mcp');
+    expect(node.data.label).toBe('repos-fs');
+    expect(node.data.prompt).toContain('Filesystem MCP');
+    expect(svc.isConnected(id!)).toBe(true);
+  });
+
+  it('applyAssistantArtifacts: wizard done в чате primary GOD тоже создаёт ноду', () => {
+    const memory = new Map<string, string>();
+    const storage = {
+      getItem: (k: string) => memory.get(k) ?? null,
+      setItem: (k: string, v: string) => void memory.set(k, v),
+      removeItem: (k: string) => void memory.delete(k),
+    };
+    const svc = new GraphService(storage);
+    const id = svc.applyAssistantArtifacts(
+      GOD_NODE_ID,
+      {
+        done: true,
+        label: 'My Skill',
+        prompt: 'Skill для тестов.',
+        kind: 'skill',
+      },
+      null,
+    );
+    expect(id).toBeTruthy();
+    const node = svc.graph().nodes.find((n) => n.id === id);
+    expect(node?.type).toBe('artifact');
+    if (node?.type !== 'artifact') throw new Error('artifact');
+    expect(node.data.kind).toBe('skill');
+    expect(node.data.label).toBe('My Skill');
+  });
 });
