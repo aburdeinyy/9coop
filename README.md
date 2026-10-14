@@ -61,6 +61,7 @@ OAuth к claude.ai сторонним приложениям [запрещён](
 Публикация идёт через [semantic-release](https://semantic-release.org/) только на push в `release` (workflow `.github/workflows/release.yml`).
 
 Релиз только с ветки `release`. Публикация — **Trusted Publishing (OIDC)**, без `NPM_TOKEN`.
+Нужны `semantic-release` ≥ 25 и `@semantic-release/npm` ≥ 13.1 (OIDC), плюс `id-token: write` в workflow.
 
 1. **Один раз** создай пакет на npm (OIDC не умеет первую публикацию):
    ```bash
@@ -73,7 +74,7 @@ OAuth к claude.ai сторонним приложениям [запрещён](
    - Repository: `9coop`
    - Workflow filename: `release.yml` (только имя файла)
    - Environment: пусто
-3. В GitHub **удали** secret `NPM_TOKEN`, если он есть (мешает OIDC).
+3. В GitHub **удали** secret `NPM_TOKEN` / `NODE_AUTH_TOKEN`, если есть (мешают OIDC).
 4. Запушь workflow на `release` — дальше версии публикует CI.
 5. Коммиты: `feat(…)`, `fix(…)` — от них считается версия.
 
