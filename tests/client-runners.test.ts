@@ -88,6 +88,8 @@ describe('streamRunner / completeRunner registry', () => {
     const god = { ...defaultGodData(), runner: 'anthropic' as const };
     for await (const ev of streamRunner(god, contextFor(god))) events.push(ev);
     expect(events[0]?.type).toBe('error');
-    expect(String((events[0] as { message: string }).message)).toMatch(/claude-code|roadmap/i);
+    expect(String((events[0] as { message: string }).message)).toMatch(
+      /Anthropic|Claude|недоступ/i,
+    );
   });
 });

@@ -85,7 +85,7 @@
         <label class="field">
           <span>Runner</span>
           <select [value]="g.runner" (change)="onRunner($event)">
-            @for (p of runners; track p) {
+            @for (p of runnersFor(g.runner); track p) {
               <option [value]="p" [selected]="g.runner === p">{{ runnerLabels[p] }}</option>
             }
           </select>
@@ -192,7 +192,9 @@
           </label>
         }
 
-        @if (isClaudeCode(g.runner)) {
+        <!-- Claude Code UI скрыт: Anthropic запретил Pro/Max в сторонних приложениях.
+             Блок ниже отключён через false — не удалять код. -->
+        @if (false && isClaudeCode(g.runner)) {
           <label class="field field-check">
             <input
               type="checkbox"

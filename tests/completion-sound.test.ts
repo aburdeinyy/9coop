@@ -90,11 +90,17 @@ describe('shouldPlayCompletionSound', () => {
 });
 
 describe('COMPLETION_CHIME_NOTES', () => {
-  it('две восходящие ноты как join-chime в 9th', () => {
-    expect(COMPLETION_CHIME_NOTES).toHaveLength(2);
-    expect(COMPLETION_CHIME_NOTES[1]!.freq).toBeGreaterThan(COMPLETION_CHIME_NOTES[0]!.freq);
-    expect(COMPLETION_CHIME_NOTES[0]).toMatchObject({ freq: 523.25, start: 0 });
-    expect(COMPLETION_CHIME_NOTES[1]).toMatchObject({ freq: 784.0, start: 0.1 });
+  it('три восходящие ноты Layercoop (не копия 9th join C5→G5)', () => {
+    expect(COMPLETION_CHIME_NOTES).toHaveLength(3);
+    const freqs = COMPLETION_CHIME_NOTES.map((n) => n.freq);
+    expect(freqs[1]!).toBeGreaterThan(freqs[0]!);
+    expect(freqs[2]!).toBeGreaterThan(freqs[1]!);
+    // не совпадать с 9th JOIN_CHIME (523.25 / 784)
+    expect(freqs).not.toContain(523.25);
+    expect(freqs).not.toContain(784.0);
+    expect(COMPLETION_CHIME_NOTES[0]).toMatchObject({ freq: 659.25, start: 0 });
+    expect(COMPLETION_CHIME_NOTES[1]).toMatchObject({ freq: 830.61, start: 0.06 });
+    expect(COMPLETION_CHIME_NOTES[2]).toMatchObject({ freq: 987.77, start: 0.13 });
   });
 });
 
@@ -104,34 +110,27 @@ describe('scheduleCompletionChime', () => {
     const ctx = audio.createContext();
     scheduleCompletionChime(ctx);
 
-    expect(audio.ctx.createOscillator).toHaveBeenCalledTimes(2);
+    expect(audio.ctx.createOscillator).toHaveBeenCalledTimes(3);
     expect(audio.oscillators[0]!.type).toBe('sine');
-    expect(audio.oscillators[0]!.frequency.value).toBe(523.25);
-    expect(audio.oscillators[1]!.frequency.value).toBe(784.0);
+    expect(audio.oscillators.map((o) => o.frequency.value)).toEqual([
+      659.25, 830.61, 987.77,
+    ]);
 
-    expect(audio.gains[0]!.gain.setValueAtTime).toHaveBeenCalledWith(0.055, 1.5);
+    expect(audio.gains[0]!.gain.setValueAtTime).toHaveBeenCalledWith(0.045, 1.5);
     expect(audio.gains[0]!.gain.exponentialRampToValueAtTime).toHaveBeenCalledWith(
       0.0001,
-      1.5 + 0.14,
+      1.5 + 0.09,
     );
-    expect(audio.gains[1]!.gain.setValueAtTime).toHaveBeenCalledWith(0.07, 1.5 + 0.1);
-    expect(audio.gains[1]!.gain.exponentialRampToValueAtTime).toHaveBeenCalledWith(
-      0.0001,
-      1.5 + 0.1 + 0.28,
-    );
-
-    expect(audio.oscillators[0]!.start).toHaveBeenCalledWith(1.5);
-    expect(audio.oscillators[0]!.stop).toHaveBeenCalledWith(1.5 + 0.14);
-    expect(audio.oscillators[1]!.start).toHaveBeenCalledWith(1.5 + 0.1);
-    expect(audio.oscillators[1]!.stop).toHaveBeenCalledWith(1.5 + 0.1 + 0.28);
+    expect(audio.gains[2]!.gain.setValueAtTime).toHaveBeenCalledWith(0.06, 1.5 + 0.13);
+    expect(audio.oscillators[2]!.stop).toHaveBeenCalledWith(1.5 + 0.13 + 0.2);
   });
 });
 
 describe('playCompletionSound', () => {
-  it('играет двунотный chime', () => {
+  it('играет трёхнотный chime', () => {
     const audio = mockAudio();
     playCompletionSound(audio);
-    expect(audio.ctx.createOscillator).toHaveBeenCalledTimes(2);
+    expect(audio.ctx.createOscillator).toHaveBeenCalledTimes(3);
   });
 
   it('resume + play, если контекст suspended', async () => {
@@ -141,7 +140,7 @@ describe('playCompletionSound', () => {
     expect(audio.ctx.resume).toHaveBeenCalledOnce();
     expect(audio.oscillators).toHaveLength(0);
     await Promise.resolve();
-    expect(audio.oscillators).toHaveLength(2);
+    expect(audio.oscillators).toHaveLength(3);
   });
 
   it('переиспользует AudioContext между вызовами', () => {

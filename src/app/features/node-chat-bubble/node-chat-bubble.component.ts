@@ -8,6 +8,7 @@ import {
   ArtifactNodeData,
   GOD_NODE_ID,
   RUNNER_LABELS,
+  SELECTABLE_GOD_RUNNERS,
   RunnerId,
   PAWN_RUNNERS,
   isArtifactData,
@@ -46,7 +47,6 @@ import { RepoGitService } from '../../core/services/repo-git.service';
 import { listConnectedArtifacts } from '../../core/utils/graph-links';
 import { resolveConnectedRepos } from '../../core/utils/resolve-repos';
 
-const RUNNERS = Object.keys(RUNNER_LABELS) as RunnerId[];
 const OPENCODE_PLACEHOLDER = DEFAULT_OPENCODE_BASE_URL;
 const MODELS_DEBOUNCE_MS = 500;
 
@@ -65,7 +65,13 @@ export class NodeChatBubbleComponent implements OnDestroy {
   protected readonly kindIcons = ARTIFACT_KIND_ICONS;
   protected readonly kindLabels = ARTIFACT_KIND_LABELS;
   protected readonly runnerLabels = RUNNER_LABELS;
-  protected readonly runners = RUNNERS;
+  /** Только публичные runners; legacy claude-code остаётся в списке, если уже выбран. */
+  protected runnersFor(current: RunnerId): RunnerId[] {
+    if ((SELECTABLE_GOD_RUNNERS as readonly string[]).includes(current)) {
+      return SELECTABLE_GOD_RUNNERS;
+    }
+    return [current, ...SELECTABLE_GOD_RUNNERS];
+  }
   protected readonly pawnRunners = PAWN_RUNNERS;
   protected readonly opencodePlaceholder = OPENCODE_PLACEHOLDER;
   protected readonly primaryGodId = GOD_NODE_ID;

@@ -224,7 +224,8 @@ export function composeChatContext(
           'Саб-GOD (делегирование исполнения):',
           subGodLines,
           'Capabilities по runner:',
-          '- primary Cursor / claude-code / opencode: MCP tools через Agent.create (граф + `.layercoop/mcp.json`).',
+          '- primary Cursor / opencode: MCP tools через Agent.create (граф + `.layercoop/mcp.json`).',
+          // '- primary Cursor / claude-code / opencode: …' — claude-code скрыт (ToS Anthropic)
           '- саб-GOD openai-compatible (OpenWebUI): тоже может вызывать stdio MCP — bridge tool-loop (function calling) с теми же серверами.',
           '- Skill — инструкция; сами tools живут в MCP (нода kind=mcp и/или disk mcp.json). Не говори «подключи MCP-ноду — и tools появятся только у Cursor»: у OpenWebUI tools тоже идут через bridge.',
           'Если задачу лучше выполнить на саб-GOD (corp LLM / DeepSeek / OpenWebUI + MCP) — в КОНЦЕ ответа добавь fence:',
@@ -254,7 +255,8 @@ export function composeChatContext(
 
   const mcpRuntimeBlock = [
     'MCP runtime:',
-    '- Cursor / claude-code / opencode: tools → Agent.create({ mcpServers }) (ноды графа + `.layercoop/mcp.json` на disk).',
+    '- Cursor / opencode: tools → Agent.create({ mcpServers }) (ноды графа + `.layercoop/mcp.json` на disk).',
+    // '- Cursor / claude-code / opencode: …' — claude-code скрыт (ToS Anthropic)
     '- openai-compatible (в т.ч. саб-GOD OpenWebUI): tools → bridge OpenAI function-calling loop (stdio MCP; тот же merge disk+граф).',
     mcpStatuses.length
       ? mcpStatuses

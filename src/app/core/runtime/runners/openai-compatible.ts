@@ -52,7 +52,7 @@ export function createOpenAiCompatibleRunner(
 
 export const streamOpenAiCompatible = createOpenAiCompatibleRunner();
 
-/** Anthropic API напрямую пока не подключён (roadmap) — только через claude-code. */
+/** Anthropic / Claude скрыты из UI (ToS Anthropic). Код claude-code в bridge сохранён. */
 export async function* streamAnthropicStub(
   _god: GodNodeData,
   _context: ChatContext,
@@ -61,7 +61,7 @@ export async function* streamAnthropicStub(
   const error: BridgeSseEvent = {
     type: 'error',
     message:
-      'Anthropic напрямую не подключён. Выберите runner Claude Code (local) или смотрите roadmap.',
+      'Anthropic / Claude недоступны в Layercoop (ограничения Anthropic). Выберите Cursor, opencode или OpenAI-compatible.',
   };
   options.onEvent?.(error);
   yield error;

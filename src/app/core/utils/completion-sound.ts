@@ -11,10 +11,11 @@ export type CompletionChimeNote = {
   gain: number;
 };
 
-/** Две восходящие ноты с экспоненциальным затуханием (~0.4 с). */
+/** Свой Layercoop-мотив: E5→G♯5→B5 (~0.33 с), не копия 9th join. */
 export const COMPLETION_CHIME_NOTES: readonly CompletionChimeNote[] = [
-  { freq: 523.25, start: 0, dur: 0.14, gain: 0.055 },
-  { freq: 784.0, start: 0.1, dur: 0.28, gain: 0.07 },
+  { freq: 659.25, start: 0, dur: 0.09, gain: 0.045 },
+  { freq: 830.61, start: 0.06, dur: 0.11, gain: 0.055 },
+  { freq: 987.77, start: 0.13, dur: 0.2, gain: 0.06 },
 ];
 
 let sharedCtx: AudioContext | null = null;

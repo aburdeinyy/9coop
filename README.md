@@ -9,7 +9,8 @@
 - **Angular 22** (standalone, signals)
 - **SCSS** + CSS variables
 - **Vitest** — unit-тесты
-- **Bridge** (`bridge/`) — local-раннеры (Cursor SDK / Claude Code / opencode) + MCP + `.env`
+- **Bridge** (`bridge/`) — local-раннеры (Cursor SDK / opencode) + MCP + `.env`
+  <!-- было: Cursor SDK / Claude Code / opencode — Claude скрыт (ToS Anthropic) -->
 - **JSZip** — export
 
 ## Быстрый старт
@@ -31,18 +32,18 @@ CLI: `layercoop [--port 4200] [--host 127.0.0.1] [--no-open]` — UI + bridge н
 | Runner | Требование | Авторизация |
 |--------|-----------|-------------|
 | `cursor` | Cursor CLI / SDK | Cursor API key на GOD-ноде |
-| `claude-code` | Claude Code CLI (`claude`) | **подписка Pro/Max** через свой `claude login`, либо Anthropic API key |
 | `opencode` | `opencode serve` (по умолчанию :4096) | конфиг самого opencode; пароль сервера — опционально |
 | `openai` / `openai-compatible` | — | ключ + Base URL на GOD-ноде |
 
+<!-- Claude Code скрыт из UI/доков: Anthropic запретил Pro/Max в сторонних приложениях.
+| `claude-code` | Claude Code CLI (`claude`) | подписка Pro/Max через `claude login`, либо Anthropic API key |
+
 Layercoop не хранит и не проксирует учётные данные Claude: для `claude-code` он запускает
 немодифицированный бинарь `claude`, который сам берёт креды пользователя. Собственный
-OAuth к claude.ai сторонним приложениям [запрещён](https://code.claude.com/docs/en/legal-and-compliance).
+OAuth к claude.ai сторонним приложениям запрещён.
 
-**Тумблер «Изолированный ран»** на GOD-ноде (только `claude-code`) переключает `--bare`:
-включён — в контексте только граф (не читаются `CLAUDE.md`, хуки, `.mcp.json`, плагины),
-но подписочный вход недоступен и нужен API key; выключен — работает подписка, но
-в контекст попадает ambient-окружение проекта.
+Тумблер «Изолированный ран» на GOD-ноде (только `claude-code`) переключает `--bare`.
+-->
 
 ## Скрипты
 
@@ -86,7 +87,8 @@ OAuth к claude.ai сторонним приложениям [запрещён](
 - View-виджеты на ноде (` ```layercoop-view ` → list / kv / markdown)
 - Чаты на GOD и на каждой ноде; markdown-ссылки в ответах
 - Runtime: plan rule→skill→mcp→agent/pawn, подсветка нод/edges, стрим токенов
-- Runners: Cursor local SDK (default), Claude Code (подписка Pro/Max или ключ), opencode, OpenAI / OpenAI-compatible
+- Runners: Cursor local SDK (default), opencode, OpenAI / OpenAI-compatible
+  <!-- было: + Claude Code — скрыт (ToS Anthropic); код раннера в bridge сохранён -->
 - Secrets → `.env`; MCP с нод → `Agent.create({ mcpServers })`
 - Export ZIP → `.layercoop/{skills,mcp.d,agents,rules,graph.json,mcp.json}`
 
@@ -107,7 +109,8 @@ src/app/
     global-chat/      — сайдбар-чат
     secrets-panel/    — .env UI
 bridge/               — sidecar с local-раннерами
-  runners/            — cursor · claude-code · opencode
+  runners/            — cursor · opencode
+  <!-- · claude-code — код есть, в UI не предлагаем -->
 .layercoop/           — workspace-артефакты (не .cursor/)
 tests/                — Vitest
 ```

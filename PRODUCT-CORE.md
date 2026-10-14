@@ -26,9 +26,10 @@ Capability-ноды (skill / mcp / agent / rule / pawn) — это **не** runn
 
 | RunnerId | Где крутится | Транспорт |
 |----------|--------------|-----------|
-| `cursor`, `claude-code`, `opencode` | bridge/`runners/` | SSE `POST /v1/run` `{ runner }` |
+| `cursor`, `opencode` | bridge/`runners/` | SSE `POST /v1/run` `{ runner }` |
 | `openai`, `openai-compatible` | Angular client runner | `fetch` chat/completions → те же события |
-| `anthropic` | stub | ошибка: используй `claude-code` (прямой API — roadmap) |
+<!-- | `claude-code` | bridge | скрыт из UI (ToS Anthropic); код сохранён | -->
+<!-- | `anthropic` | stub | скрыт из UI | -->
 
 ```
 Промпт (Global Chat / чат ноды)
@@ -38,8 +39,9 @@ Capability-ноды (skill / mcp / agent / rule / pawn) — это **не** runn
         │  composeChatContext(reachability от GOD)
         ▼
 Runner registry
-  ├─ local  → layercoop-bridge → AgentRunner (cursor | claude-code | opencode)
+  ├─ local  → layercoop-bridge → AgentRunner (cursor | opencode)
   └─ client → OpenAI-compatible HTTP runner
+  <!-- claude-code runner в bridge сохранён, в UI не предлагаем -->
         │
         │  node:active · edge:flow · tool:call · token
         ▼
@@ -74,7 +76,8 @@ API keys в ZIP не попадают.
 - ✅ GOD + skill/mcp/agent/rule/pawn; цепочки связей; порты
 - ✅ Resize + view-плитки (`layercoop-view`)
 - ✅ Runtime + realtime events на canvas
-- ✅ Runner registry: Cursor local / Claude Code / opencode / OpenAI / OpenAI-compatible
+- ✅ Runner registry: Cursor local / opencode / OpenAI / OpenAI-compatible
+  <!-- Claude Code скрыт из UI (ToS Anthropic); код раннера сохранён -->
 - ✅ Secrets → `.env`
 - ✅ Export ZIP → `.layercoop/`
 - ✅ Markdown в чате (ссылки)
@@ -84,7 +87,7 @@ API keys в ZIP не попадают.
 - [ ] LLM-генерация артефактов (не только stub)
 - [ ] Import `graph.json`
 - [ ] Live sync workspace ↔ `.layercoop/`
-- [ ] Anthropic напрямую по API-ключу (`/v1/messages`) — сейчас Anthropic доступен через `claude-code`
+<!-- - [ ] Anthropic напрямую по API-ключу (`/v1/messages`) — скрыто: Pro/Max нельзя в сторонних приложениях -->
 - [ ] Более богатый markdown в чате (таблицы и т.п.)
 
 ---
@@ -96,6 +99,7 @@ API keys в ZIP не попадают.
 | UI | Angular 22 (standalone, signals) |
 | Canvas | HTML/SVG + signals |
 | Bridge | Node (`bridge/`), proxy `/layercoop-bridge`, local runners |
-| Runners | cursor · claude-code · opencode (bridge) + openai / openai-compatible (client) |
+| Runners | cursor · opencode (bridge) + openai / openai-compatible (client) |
+<!-- | Runners | … · claude-code … — скрыт из UI, код в bridge/ сохранён | -->
 | Тесты | Vitest |
 | Экспорт | JSZip |

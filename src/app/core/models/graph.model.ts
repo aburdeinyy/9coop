@@ -192,8 +192,26 @@ export const RUNNER_LABELS: Record<RunnerId, string> = {
 /** @deprecated используй RUNNER_LABELS */
 export const LLM_PROVIDER_LABELS = RUNNER_LABELS;
 
+/**
+ * Runners в UI выбора GOD.
+ * claude-code / anthropic скрыты: Anthropic запретил подписку Pro/Max в сторонних приложениях.
+ * Код раннеров в bridge/ сохранён — не удалять.
+ */
+export const SELECTABLE_GOD_RUNNERS: RunnerId[] = [
+  'cursor',
+  // 'claude-code',
+  'opencode',
+  'openai',
+  'openai-compatible',
+  // 'anthropic',
+];
+
 /** Pawn — вспомогательная LLM по HTTP из браузера, local-раннеры ей не подходят. */
-export const PAWN_RUNNERS: RunnerId[] = ['openai', 'openai-compatible', 'anthropic'];
+export const PAWN_RUNNERS: RunnerId[] = [
+  'openai',
+  'openai-compatible',
+  // 'anthropic', // скрыто: Anthropic Pro/OAuth нельзя в сторонних приложениях
+];
 
 /** @deprecated используй PAWN_RUNNERS */
 export const PAWN_PROVIDERS = PAWN_RUNNERS;
