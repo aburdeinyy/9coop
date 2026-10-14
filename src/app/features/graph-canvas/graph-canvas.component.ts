@@ -46,6 +46,8 @@ import {
   type PortSide,
   cubicEdgePath,
   findNodeAtWorld,
+  findPortSideAtWorld,
+  nearestPortSide,
   nodeBox,
   portAnchor,
   resolveArtifactSize,
@@ -609,8 +611,14 @@ export class GraphCanvasComponent implements OnDestroy {
       const world = this.toWorld(event);
       const hit = findNodeAtWorld(this.nodes(), world.x, world.y, d.fromNodeId);
       if (hit) {
-        // Уже связаны → отвязать; иначе связать
-        this.graphService.toggleLink(d.fromNodeId, hit.id);
+        const targetSide =
+          findPortSideAtWorld(hit, world.x, world.y) ??
+          nearestPortSide(nodeBox(hit), world.x, world.y);
+        // Новый линк или перефиксация якорей; удаление — клик по ребру
+        this.graphService.linkNodes(d.fromNodeId, hit.id, {
+          sourceSide: d.fromSide,
+          targetSide,
+        });
       }
       this.wirePreview.set(null);
       this.wireHoverTargetId.set(null);

@@ -7,6 +7,7 @@ import {
 import type { ChatContext } from '../utils/compose-context';
 import {
   buildMcpServersFromArtifacts,
+  withRepoFilesystemMcp,
   type McpServerInline,
 } from './mcp-servers';
 
@@ -715,9 +716,12 @@ export function bridgeBase(god: GodNodeData): string {
   return trimmed;
 }
 
-/** MCP только с подключённых artifact-нод графа (не из Cursor IDE). */
+/** MCP с подключённых artifact-нод + живой repos-fs из repoRoots (не из Cursor IDE). */
 export function buildCursorMcpServers(context: ChatContext): McpServerInline[] {
-  return buildMcpServersFromArtifacts(context.connectedArtifacts);
+  return withRepoFilesystemMcp(
+    buildMcpServersFromArtifacts(context.connectedArtifacts),
+    context.repoRoots ?? [],
+  );
 }
 
 export type BridgeTokenUsage = {

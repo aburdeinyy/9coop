@@ -102,7 +102,8 @@ describe('save-target', () => {
 
     expect(resolveWorkspaceCwdForFocus(graph, 'artifact-1')).toBeUndefined();
     expect(resolveWorkspaceCwdForFocus(graph, 'artifact-3')).toBe('/Users/dev/work/my-app');
-    expect(resolveWorkspaceCwdForFocus(graph, GOD_NODE_ID)).toBe('/Users/dev/work/my-app');
+    // GOD / саб-GOD: cwd = Layercoop home (disk mcp.json), репо — через repos-fs MCP
+    expect(resolveWorkspaceCwdForFocus(graph, GOD_NODE_ID)).toBeUndefined();
 
     const ctx = composeChatContext(graph, 'hi', { focusNodeId: 'artifact-1' });
     expect(ctx.workspaceCwd).toBeUndefined();

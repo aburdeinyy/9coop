@@ -77,7 +77,10 @@ export function buildGroupEdgeVisuals(
     byPair.set(pair, {
       key: pair,
       edgeIds: [edge.id],
-      path: cubicPathBetweenBoxes(sourceBox, targetBox),
+      path: cubicPathBetweenBoxes(sourceBox, targetBox, {
+        from: edge.sourceSide,
+        to: edge.targetSide,
+      }),
       sourceBox,
       targetBox,
     });

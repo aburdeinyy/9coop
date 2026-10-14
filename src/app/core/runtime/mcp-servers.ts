@@ -90,6 +90,29 @@ export function buildMcpServersFromArtifacts(artifacts: McpArtifactLike[]): McpS
   return servers;
 }
 
+const REPOS_FS_NAME = 'repos-fs';
+const FS_PACKAGE = '@modelcontextprotocol/server-filesystem';
+
+/**
+ * Launcher `.layercoop/mcp.d/repos-fs.mjs` читает graph.json с диска — UI его не пишет.
+ * Подменяем на прямой server-filesystem с абсолютными корнями из repo-нод графа.
+ */
+export function withRepoFilesystemMcp(
+  servers: McpServerInline[],
+  repoRoots: string[],
+): McpServerInline[] {
+  const roots = [...new Set(repoRoots.map((p) => p.trim()).filter(Boolean))];
+  if (roots.length === 0) return servers;
+  const rest = servers.filter((s) => s.name !== REPOS_FS_NAME);
+  rest.push({
+    name: REPOS_FS_NAME,
+    type: 'stdio',
+    command: 'npx',
+    args: ['-y', FS_PACKAGE, ...roots],
+  });
+  return rest;
+}
+
 export function toSdkMcpServersRecord(servers: McpServerInline[]): SdkMcpServersRecord {
   const record: SdkMcpServersRecord = {};
   for (const s of servers) {

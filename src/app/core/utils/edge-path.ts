@@ -94,6 +94,50 @@ function facingSides(a: NodeBox, b: NodeBox): { from: Side; to: Side } {
   return dy >= 0 ? { from: 'bottom', to: 'top' } : { from: 'top', to: 'bottom' };
 }
 
+/** Ближайшая сторона бокса к world-точке (для drop провода на тело ноды). */
+export function nearestPortSide(box: NodeBox, x: number, y: number): PortSide {
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  const dist: Record<PortSide, number> = {
+    left: Math.hypot(x - box.x, y - cy),
+    right: Math.hypot(x - (box.x + box.w), y - cy),
+    top: Math.hypot(x - cx, y - box.y),
+    bottom: Math.hypot(x - cx, y - (box.y + box.h)),
+  };
+  let best: PortSide = 'left';
+  let bestD = dist.left;
+  for (const side of PORT_SIDES) {
+    if (dist[side] < bestD) {
+      best = side;
+      bestD = dist[side];
+    }
+  }
+  return best;
+}
+
+/** Порт ноды в радиусе hitR от world-точки, иначе null. */
+export function findPortSideAtWorld(
+  node: GraphNode,
+  x: number,
+  y: number,
+  hitR = 14,
+): PortSide | null {
+  const box = nodeBox(node);
+  let best: PortSide | null = null;
+  let bestD = hitR;
+  for (const side of PORT_SIDES) {
+    const p = portAnchor(box, side);
+    const d = Math.hypot(x - p.x, y - p.y);
+    if (d <= bestD) {
+      best = side;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+export type EdgePathSides = { from?: PortSide; to?: PortSide };
+
 export function nodeContainsPoint(
   box: NodeBox,
   x: number,
@@ -127,22 +171,58 @@ export function wirePreviewPath(x1: number, y1: number, x2: number, y2: number):
   return `M ${x1} ${y1} L ${x2} ${y2}`;
 }
 
-/** Кубическая кривая между двумя боксами (нода или рамка группы). */
-export function cubicPathBetweenBoxes(a: NodeBox, b: NodeBox): string {
-  const { from, to } = facingSides(a, b);
+/** Контрольная точка наружу от порта — касательная перпендикулярна ребру. */
+export function outwardControl(
+  point: { x: number; y: number },
+  side: PortSide,
+  distance: number,
+): { x: number; y: number } {
+  const d = Math.max(1, distance);
+  switch (side) {
+    case 'left':
+      return { x: point.x - d, y: point.y };
+    case 'right':
+      return { x: point.x + d, y: point.y };
+    case 'top':
+      return { x: point.x, y: point.y - d };
+    case 'bottom':
+      return { x: point.x, y: point.y + d };
+  }
+}
+
+function orthoControlDistance(
+  s: { x: number; y: number },
+  t: { x: number; y: number },
+): number {
+  const span = Math.hypot(t.x - s.x, t.y - s.y);
+  return Math.max(32, Math.min(160, span * 0.45));
+}
+
+/**
+ * Кубическая кривая между двумя боксами.
+ * Касательные на концах всегда нормальны к стороне порта (вход/выход под 90°).
+ */
+export function cubicPathBetweenBoxes(
+  a: NodeBox,
+  b: NodeBox,
+  sides?: EdgePathSides,
+): string {
+  const facing = facingSides(a, b);
+  const from = sides?.from ?? facing.from;
+  const to = sides?.to ?? facing.to;
   const s = portAnchor(a, from);
   const t = portAnchor(b, to);
-
-  if (from === 'left' || from === 'right') {
-    const mx = (s.x + t.x) / 2;
-    return `M ${s.x} ${s.y} C ${mx} ${s.y}, ${mx} ${t.y}, ${t.x} ${t.y}`;
-  }
-
-  const my = (s.y + t.y) / 2;
-  return `M ${s.x} ${s.y} C ${s.x} ${my}, ${t.x} ${my}, ${t.x} ${t.y}`;
+  const dist = orthoControlDistance(s, t);
+  const c1 = outwardControl(s, from, dist);
+  const c2 = outwardControl(t, to, dist);
+  return `M ${s.x} ${s.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${t.x} ${t.y}`;
 }
 
 /** Кубическая кривая между ближайшими смотрящими друг на друга рёбрами нод. */
-export function cubicEdgePath(source: GraphNode, target: GraphNode): string {
-  return cubicPathBetweenBoxes(nodeBox(source), nodeBox(target));
+export function cubicEdgePath(
+  source: GraphNode,
+  target: GraphNode,
+  sides?: EdgePathSides,
+): string {
+  return cubicPathBetweenBoxes(nodeBox(source), nodeBox(target), sides);
 }

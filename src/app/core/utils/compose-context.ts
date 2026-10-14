@@ -51,6 +51,8 @@ export interface ChatContext {
   focusNodeId: string;
   /** cwd из repo↔primary (для bridge run) */
   workspaceCwd?: string;
+  /** Абсолютные пути connected repo-нод — для MCP repos-fs / filesystem */
+  repoRoots?: string[];
 }
 
 export interface ComposeChatOptions {
@@ -342,6 +344,7 @@ export function composeChatContext(
     selectedArtifactIds: selectedArtifacts.map((a) => a.id),
     god,
     focusNodeId,
+    ...(workspaces.paths.length ? { repoRoots: workspaces.paths } : {}),
     ...(() => {
       const cwd = resolveWorkspaceCwdForFocus(graph, focusNodeId, workspaces);
       return cwd ? { workspaceCwd: cwd } : {};

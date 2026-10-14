@@ -1,6 +1,12 @@
 import type { ChatMessage, LayercoopGraph } from '../models/graph.model';
 import { normalizeNodeGroups } from './node-group';
-import { GOD_NODE_ID, isGodData, normalizeArtifactData, normalizeGodData } from '../models/graph.model';
+import {
+  GOD_NODE_ID,
+  isGodData,
+  normalizeArtifactData,
+  normalizeGodData,
+  normalizeGraphEdge,
+} from '../models/graph.model';
 import { normalizeChatRunStats } from './run-stats';
 
 export const WORKSPACE_STORAGE_KEY = 'layercoop.workspace.v1';
@@ -129,21 +135,7 @@ function normalizeGraph(raw: unknown): LayercoopGraph | null {
   const typedNodes = nodes as LayercoopGraph['nodes'];
   if (!typedNodes.some((n) => n.id === GOD_NODE_ID && n.type === 'god')) return null;
 
-  const edges = raw['edges'].map((edge) => {
-    if (!isRecord(edge)) return null;
-    if (
-      typeof edge['id'] !== 'string' ||
-      typeof edge['source'] !== 'string' ||
-      typeof edge['target'] !== 'string'
-    ) {
-      return null;
-    }
-    return {
-      id: edge['id'] as string,
-      source: edge['source'] as string,
-      target: edge['target'] as string,
-    };
-  });
+  const edges = raw['edges'].map((edge) => normalizeGraphEdge(edge));
   if (edges.some((e) => e === null)) return null;
 
   const validIds = new Set(typedNodes.map((n) => n.id));

@@ -87,10 +87,47 @@ export interface GraphNode {
   data: ArtifactNodeData | GodNodeData;
 }
 
+/** Сторона порта, к которой жёстко прикреплено ребро (UI). */
+export type EdgePortSide = 'left' | 'right' | 'top' | 'bottom';
+
+const EDGE_PORT_SIDES = new Set<EdgePortSide>(['left', 'right', 'top', 'bottom']);
+
+export function normalizeEdgePortSide(value: unknown): EdgePortSide | undefined {
+  return typeof value === 'string' && EDGE_PORT_SIDES.has(value as EdgePortSide)
+    ? (value as EdgePortSide)
+    : undefined;
+}
+
 export interface GraphEdge {
   id: string;
   source: string;
   target: string;
+  /** Фиксированный якорь на source; без поля — динамический facingSides. */
+  sourceSide?: EdgePortSide;
+  /** Фиксированный якорь на target. */
+  targetSide?: EdgePortSide;
+}
+
+export function normalizeGraphEdge(raw: unknown): GraphEdge | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const o = raw as Record<string, unknown>;
+  if (
+    typeof o['id'] !== 'string' ||
+    typeof o['source'] !== 'string' ||
+    typeof o['target'] !== 'string'
+  ) {
+    return null;
+  }
+  const edge: GraphEdge = {
+    id: o['id'],
+    source: o['source'],
+    target: o['target'],
+  };
+  const sourceSide = normalizeEdgePortSide(o['sourceSide']);
+  const targetSide = normalizeEdgePortSide(o['targetSide']);
+  if (sourceSide) edge.sourceSide = sourceSide;
+  if (targetSide) edge.targetSide = targetSide;
+  return edge;
 }
 
 /** Визуальная группа нод на доске (рамка + сетка). Рёбра графа не меняет. */

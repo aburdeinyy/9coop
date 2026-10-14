@@ -79,20 +79,21 @@ export function formatSaveTargetsPromptBlock(repos: ConnectedRepo[]): string {
 }
 
 /**
- * cwd для Agent:
+ * cwd для Agent / bridge disk MCP:
  * - focus artifact (не repo) с saveRoot → saveRoot
  * - focus artifact без saveRoot → Layercoop home (undefined → bridge process.cwd)
- * - иначе → первая связанная repo (как раньше)
+ * - GOD / саб-GOD → Layercoop home (чтобы подхватить `.layercoop/mcp.json`);
+ *   репозитории — через MCP repos-fs (корни из repo-нод), не через подмену cwd
  */
 export function resolveWorkspaceCwdForFocus(
   graph: LayercoopGraph,
   focusNodeId: string,
-  workspaces: ResolvedRepos = resolveConnectedRepos(graph),
+  _workspaces: ResolvedRepos = resolveConnectedRepos(graph),
 ): string | undefined {
   const focus = graph.nodes.find((n) => n.id === focusNodeId);
   if (focus?.type === 'artifact' && isArtifactData(focus.data) && focus.data.kind !== 'repo') {
     const root = focus.data.saveRoot?.trim();
     return root || undefined;
   }
-  return workspaces.cwd;
+  return undefined;
 }

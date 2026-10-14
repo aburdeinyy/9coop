@@ -3,8 +3,10 @@ import {
   ArtifactKind,
   ArtifactNodeData,
   ChatMessage,
+  EdgePortSide,
   GOD_NODE_ID,
   GodNodeData,
+  GraphEdge,
   GraphNode,
   LayercoopGraph,
   NodeGroup,
@@ -999,20 +1001,43 @@ export class GraphService {
     this.selectNode(toId);
   }
 
-  linkNodes(a: string, b: string): void {
+  linkNodes(
+    a: string,
+    b: string,
+    opts?: { sourceSide?: EdgePortSide; targetSide?: EdgePortSide },
+  ): void {
     if (a === b) return;
     const g0 = this.graph();
     if (!g0.nodes.some((n) => n.id === a) || !g0.nodes.some((n) => n.id === b)) return;
 
     let newlyLinked = false;
     const edgeId = edgeIdBetween(a, b);
+    const hasSides = opts?.sourceSide !== undefined || opts?.targetSide !== undefined;
 
     this.graph.update((g) => {
-      if (findEdgeBetween(g, a, b)) {
-        return withSyncedConnectedFlags(g);
+      const existing = findEdgeBetween(g, a, b);
+      if (existing) {
+        if (!hasSides) return withSyncedConnectedFlags(g);
+        const sidesForEdge =
+          existing.source === a
+            ? { sourceSide: opts?.sourceSide, targetSide: opts?.targetSide }
+            : { sourceSide: opts?.targetSide, targetSide: opts?.sourceSide };
+        const edges = g.edges.map((e) => {
+          if (e.id !== existing.id) return e;
+          const next = { ...e };
+          if (sidesForEdge.sourceSide) next.sourceSide = sidesForEdge.sourceSide;
+          else delete next.sourceSide;
+          if (sidesForEdge.targetSide) next.targetSide = sidesForEdge.targetSide;
+          else delete next.targetSide;
+          return next;
+        });
+        return withSyncedConnectedFlags(touchGraph({ ...g, edges }));
       }
       newlyLinked = true;
-      const edges = [...g.edges, { id: edgeId, source: a, target: b }];
+      const edge: GraphEdge = { id: edgeId, source: a, target: b };
+      if (opts?.sourceSide) edge.sourceSide = opts.sourceSide;
+      if (opts?.targetSide) edge.targetSide = opts.targetSide;
+      const edges = [...g.edges, edge];
       return withSyncedConnectedFlags(touchGraph({ ...g, edges }));
     });
     this.persist();
