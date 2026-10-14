@@ -6,6 +6,7 @@ import { loadWorkspace, safeLocalStorage, saveWorkspace, type StorageLike } from
 export class SettingsService {
   readonly open = signal(false);
   readonly boardAuraEnabled = signal(true);
+  readonly completionSoundEnabled = signal(true);
 
   private readonly storage: StorageLike | null;
 
@@ -14,6 +15,9 @@ export class SettingsService {
     const snap = loadWorkspace(this.storage);
     if (typeof snap?.boardAuraEnabled === 'boolean') {
       this.boardAuraEnabled.set(snap.boardAuraEnabled);
+    }
+    if (typeof snap?.completionSoundEnabled === 'boolean') {
+      this.completionSoundEnabled.set(snap.completionSoundEnabled);
     }
   }
 
@@ -28,5 +32,10 @@ export class SettingsService {
   setBoardAuraEnabled(enabled: boolean): void {
     this.boardAuraEnabled.set(enabled);
     saveWorkspace(this.storage, { boardAuraEnabled: enabled });
+  }
+
+  setCompletionSoundEnabled(enabled: boolean): void {
+    this.completionSoundEnabled.set(enabled);
+    saveWorkspace(this.storage, { completionSoundEnabled: enabled });
   }
 }

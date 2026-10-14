@@ -145,6 +145,26 @@ describe('workspace-persist', () => {
     expect(parsed?.boardAuraEnabled).toBe(false);
   });
 
+  it('completionSoundEnabled сохраняется и по умолчанию true', () => {
+    const storage = memoryStorage();
+    saveWorkspace(storage, { graph: sampleGraph, selectedNodeId: GOD_NODE_ID, nodeChats: {} });
+    expect(loadWorkspace(storage)?.completionSoundEnabled).toBe(true);
+
+    saveWorkspace(storage, { completionSoundEnabled: false });
+    expect(loadWorkspace(storage)?.completionSoundEnabled).toBe(false);
+
+    const parsed = parseWorkspace(
+      JSON.stringify({
+        version: 1,
+        graph: sampleGraph,
+        selectedNodeId: GOD_NODE_ID,
+        nodeChats: {},
+        completionSoundEnabled: false,
+      }),
+    );
+    expect(parsed?.completionSoundEnabled).toBe(false);
+  });
+
   it('maxGodCounter берёт max из god-N', () => {
     expect(maxGodCounter(sampleGraph)).toBe(0);
     const withSub: LayercoopGraph = {
