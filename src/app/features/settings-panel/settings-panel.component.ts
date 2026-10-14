@@ -21,4 +21,9 @@ export class SettingsPanelComponent {
     const checked = (event.target as HTMLInputElement).checked;
     this.settings.setBoardAuraEnabled(checked);
   }
+
+  onCompletionSound(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.settings.setCompletionSoundEnabled(checked);
+  }
 }

@@ -47,4 +47,30 @@ describe('SettingsService', () => {
     const svc = new SettingsService(storage);
     expect(svc.boardAuraEnabled()).toBe(false);
   });
+
+  it('по умолчанию звук завершения включён, выключение пишется в workspace', () => {
+    const storage = memoryStorage();
+    saveWorkspace(storage, {
+      selectedNodeId: GOD_NODE_ID,
+      nodeChats: {},
+    });
+
+    const svc = new SettingsService(storage);
+    expect(svc.completionSoundEnabled()).toBe(true);
+
+    svc.setCompletionSoundEnabled(false);
+    expect(svc.completionSoundEnabled()).toBe(false);
+    expect(loadWorkspace(storage)?.completionSoundEnabled).toBe(false);
+  });
+
+  it('подхватывает completionSoundEnabled: false из storage', () => {
+    const storage = memoryStorage();
+    saveWorkspace(storage, {
+      selectedNodeId: GOD_NODE_ID,
+      nodeChats: {},
+      completionSoundEnabled: false,
+    });
+    const svc = new SettingsService(storage);
+    expect(svc.completionSoundEnabled()).toBe(false);
+  });
 });

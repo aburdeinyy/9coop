@@ -6,6 +6,7 @@ import {
   parseCliArgs,
   resolveBridgeEntry,
   resolvePackageRoot,
+  resolveTsxLoader,
   resolveUiDist,
   rewriteBridgeUrl,
 } from '../cli/paths';
@@ -38,5 +39,22 @@ describe('cli paths / args', () => {
     expect(resolveUiDist(root)).toBe(ui);
     expect(resolveBridgeEntry(root)).toContain(`${path.sep}bridge${path.sep}src${path.sep}server.ts`);
     expect(resolvePackageRoot(path.join(root, 'bin', 'layercoop.mjs'))).toBe(root);
+  });
+
+  it('resolveTsxLoader берёт loader из node_modules пакета, не из cwd', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'layercoop-cli-'));
+    const loader = path.join(root, 'node_modules', 'tsx', 'dist', 'loader.mjs');
+    fs.mkdirSync(path.dirname(loader), { recursive: true });
+    fs.writeFileSync(loader, 'export {}');
+    expect(resolveTsxLoader(root)).toBe(loader);
+  });
+
+  it('resolveTsxLoader падает с понятной ошибкой, если tsx нет', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'layercoop-cli-empty-'));
+    fs.writeFileSync(
+      path.join(root, 'package.json'),
+      JSON.stringify({ name: 'empty-pkg', type: 'module' }),
+    );
+    expect(() => resolveTsxLoader(root)).toThrow(/tsx/);
   });
 });

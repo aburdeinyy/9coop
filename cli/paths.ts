@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 export interface CliArgs {
@@ -61,4 +62,23 @@ export function resolveUiDist(packageRoot: string): string {
 
 export function resolveBridgeEntry(packageRoot: string): string {
   return path.join(packageRoot, 'bridge', 'src', 'server.ts');
+}
+
+/** Абсолютный путь к tsx loader — чтобы `layercoop` работал из любой cwd. */
+export function resolveTsxLoader(packageRoot: string): string {
+  const nested = path.join(packageRoot, 'node_modules', 'tsx', 'dist', 'loader.mjs');
+  if (fs.existsSync(nested)) return nested;
+
+  try {
+    const require = createRequire(path.join(packageRoot, 'package.json'));
+    const pkgJson = require.resolve('tsx/package.json');
+    const loader = path.join(path.dirname(pkgJson), 'dist', 'loader.mjs');
+    if (fs.existsSync(loader)) return loader;
+  } catch {
+    /* fallthrough */
+  }
+
+  throw new Error(
+    `Не найден tsx loader рядом с ${packageRoot}. Переустанови пакет (npm i -g layercoop / npx layercoop).`,
+  );
 }

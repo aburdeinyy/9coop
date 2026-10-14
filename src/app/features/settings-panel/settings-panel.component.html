@@ -24,6 +24,18 @@
           (change)="onBoardAura($event)"
         />
       </label>
+
+      <label class="settings-row">
+        <span class="settings-row__text">
+          <span class="settings-row__label">Звук по завершении</span>
+          <span class="settings-row__hint">Короткий сигнал, когда промпт выполнен</span>
+        </span>
+        <input
+          type="checkbox"
+          [checked]="settings.completionSoundEnabled()"
+          (change)="onCompletionSound($event)"
+        />
+      </label>
     </div>
   </div>
 }

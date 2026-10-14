@@ -30,6 +30,8 @@ export interface WorkspaceSnapshot {
   zoom?: number;
   /** Блюр-аура под нодами на доске. По умолчанию включена. */
   boardAuraEnabled?: boolean;
+  /** Звук по завершении промпта. По умолчанию включён. */
+  completionSoundEnabled?: boolean;
   /** Правый чат открыт. По умолчанию true. */
   chatSidebarOpen?: boolean;
 }
@@ -318,6 +320,11 @@ export function parseWorkspace(raw: string | null | undefined): WorkspaceSnapsho
     const boardAuraEnabled =
       typeof json['boardAuraEnabled'] === 'boolean' ? json['boardAuraEnabled'] : true;
 
+    const completionSoundEnabled =
+      typeof json['completionSoundEnabled'] === 'boolean'
+        ? json['completionSoundEnabled']
+        : true;
+
     const chatSidebarOpen =
       typeof json['chatSidebarOpen'] === 'boolean' ? json['chatSidebarOpen'] : true;
 
@@ -330,6 +337,7 @@ export function parseWorkspace(raw: string | null | undefined): WorkspaceSnapsho
       pan,
       zoom,
       boardAuraEnabled,
+      completionSoundEnabled,
       chatSidebarOpen,
     };
   } catch {
@@ -365,6 +373,10 @@ export function saveWorkspace(
       patch.boardAuraEnabled !== undefined
         ? patch.boardAuraEnabled
         : (prev?.boardAuraEnabled ?? true),
+    completionSoundEnabled:
+      patch.completionSoundEnabled !== undefined
+        ? patch.completionSoundEnabled
+        : (prev?.completionSoundEnabled ?? true),
     chatSidebarOpen:
       patch.chatSidebarOpen !== undefined
         ? patch.chatSidebarOpen

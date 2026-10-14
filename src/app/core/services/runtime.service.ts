@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { GraphService } from './graph.service';
 import { SecretsService } from './secrets.service';
 import { RepoGitService } from './repo-git.service';
+import { SettingsService } from './settings.service';
 import {
   GOD_NODE_ID,
   isArtifactData,
@@ -31,6 +32,10 @@ import {
 } from '../utils/run-context-visual';
 import { chatScopeKey } from '../utils/chat-scope';
 import { buildPipeRunPrompt, listPipeSkills } from '../utils/pipe-skills';
+import {
+  playCompletionSound,
+  shouldPlayCompletionSound,
+} from '../utils/completion-sound';
 
 export type RuntimeRunOpts = {
   forceArtifactIds?: string[];
@@ -43,6 +48,7 @@ export class RuntimeService {
   private readonly graphService = inject(GraphService);
   private readonly secrets = inject(SecretsService);
   private readonly repoGit = inject(RepoGitService);
+  private readonly settings = inject(SettingsService);
   /** Параллельные раны: scopeKey → AbortController */
   private readonly aborts = new Map<string, AbortController>();
 
@@ -267,6 +273,14 @@ export class RuntimeService {
           finalizeRunSteps(steps),
           threadId,
         );
+      }
+      if (
+        shouldPlayCompletionSound({
+          enabled: this.settings.completionSoundEnabled(),
+          aborted: controller.signal.aborted,
+        })
+      ) {
+        playCompletionSound();
       }
       void this.repoGit.refreshConnected();
     }
