@@ -32,7 +32,26 @@
       (click)="addChecklist($event)"
       title="Нода с чеклистом на плитке"
     >
-      <span>☐</span>
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <rect
+          x="2.5"
+          y="2.5"
+          width="11"
+          height="11"
+          rx="2"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+        />
+        <path
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M5 8.2 7.1 10.2 11 5.8"
+        />
+      </svg>
       <span>Чеклист</span>
     </button>
     <button
@@ -57,6 +76,19 @@
         <span>Чат</span>
       </button>
     }
+    <button type="button" class="btn" (click)="openSecrets($event)" title="Переменные → .env">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+          stroke-linejoin="round"
+          d="M10.2 1.8a3.2 3.2 0 0 0-4.4 3.1L2.2 8.5v2.2h2.2l.8-.8V8.6l1.2-1.2a3.2 3.2 0 0 0 4.6-2.8 3.2 3.2 0 0 0-.8-2.8z"
+        />
+        <circle cx="10.4" cy="4.6" r="0.7" fill="currentColor" stroke="none" />
+      </svg>
+      <span>Переменные</span>
+    </button>
     <button type="button" class="btn" (click)="openSettings($event)" title="Настройки">
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
         <circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4" />
@@ -69,31 +101,6 @@
         />
       </svg>
       <span>Настройки</span>
-    </button>
-    <button type="button" class="btn" (click)="openSecrets($event)" title="Секреты → .env">
-      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-        <path
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.4"
-          stroke-linejoin="round"
-          d="M10.2 1.8a3.2 3.2 0 0 0-4.4 3.1L2.2 8.5v2.2h2.2l.8-.8V8.6l1.2-1.2a3.2 3.2 0 0 0 4.6-2.8 3.2 3.2 0 0 0-.8-2.8z"
-        />
-        <circle cx="10.4" cy="4.6" r="0.7" fill="currentColor" stroke="none" />
-      </svg>
-      <span>Секреты</span>
-    </button>
-    <button type="button" class="btn btn-primary" (click)="export()">
-      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-        <path
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.6"
-          stroke-linecap="round"
-          d="M8 2.5v7M5.2 7.2 8 10l2.8-2.8M3.5 13.5h9"
-        />
-      </svg>
-      <span>Экспорт</span>
     </button>
   </div>
 </div>

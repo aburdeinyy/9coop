@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { GraphService } from '../../core/services/graph.service';
 import { SettingsService } from '../../core/services/settings.service';
 
 @Component({
@@ -8,6 +9,7 @@ import { SettingsService } from '../../core/services/settings.service';
 })
 export class SettingsPanelComponent {
   protected readonly settings = inject(SettingsService);
+  private readonly graph = inject(GraphService);
 
   close(): void {
     this.settings.close();
@@ -25,5 +27,9 @@ export class SettingsPanelComponent {
   onCompletionSound(event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     this.settings.setCompletionSoundEnabled(checked);
+  }
+
+  exportBoard(): void {
+    void this.graph.exportZip();
   }
 }

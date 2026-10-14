@@ -36,6 +36,16 @@
           (change)="onCompletionSound($event)"
         />
       </label>
+
+      <div class="settings-row settings-row--action">
+        <span class="settings-row__text">
+          <span class="settings-row__label">Экспорт доски</span>
+          <span class="settings-row__hint">ZIP с `.layercoop/` — skills, mcp, graph</span>
+        </span>
+        <button type="button" class="btn btn-primary btn-small" (click)="exportBoard()">
+          Экспорт
+        </button>
+      </div>
     </div>
   </div>
 }

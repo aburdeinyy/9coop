@@ -46,6 +46,10 @@
   background: var(--bg-surface);
   cursor: pointer;
 
+  & + & {
+    margin-top: 8px;
+  }
+
   input {
     width: 16px;
     height: 16px;
@@ -53,6 +57,10 @@
     cursor: pointer;
     flex-shrink: 0;
   }
+}
+
+.settings-row--action {
+  cursor: default;
 }
 
 .settings-row__text {

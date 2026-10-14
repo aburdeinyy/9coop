@@ -83,8 +83,4 @@ export class ToolbarComponent {
     event.stopPropagation();
     this.settings.toggle();
   }
-
-  export(): void {
-    void this.graphService.exportZip();
-  }
 }
