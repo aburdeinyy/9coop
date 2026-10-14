@@ -8,6 +8,7 @@ import {
   parseCliArgs,
   resolveBridgeEntry,
   resolvePackageRoot,
+  resolveTsxLoader,
   resolveUiDist,
   rewriteBridgeUrl,
 } from './paths';
@@ -107,9 +108,10 @@ Starts Layercoop UI + local bridge (MCP / runners).`);
   const root = resolvePackageRoot(fileURLToPath(import.meta.url));
   const uiRoot = resolveUiDist(root);
   const bridgeEntry = resolveBridgeEntry(root);
+  const tsxLoader = resolveTsxLoader(root);
   const bridgePort = Number(process.env.LAYERCOOP_BRIDGE_PORT) || (await freePort());
 
-  const bridge = spawn(process.execPath, ['--import', 'tsx', bridgeEntry], {
+  const bridge = spawn(process.execPath, ['--import', tsxLoader, bridgeEntry], {
     cwd: process.cwd(),
     env: { ...process.env, LAYERCOOP_BRIDGE_PORT: String(bridgePort) },
     stdio: ['ignore', 'inherit', 'inherit'],
